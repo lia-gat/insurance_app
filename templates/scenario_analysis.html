@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Сценарный анализ{% endblock %}
+
+{% block content %}
+
+<h2>Сценарный анализ портфеля</h2>
+
+<p>
+    Расчёт выполняется по всем <b>активным</b> договорам.
+    Сценарий изменяет коэффициент смертности qx относительно базового значения из таблицы смертности.
+</p>
+
+<hr>
+
+<!-- Формулы -->
+<h3>Модель расчёта</h3>
+
+<p><b>Базовый сценарий:</b> \( q_x^{base} \times 1.0 \)</p>
+<p><b>Пессимистичный:</b> \( q_x^{base} \times 1.5 \) &nbsp;—&nbsp; повышенная смертность</p>
+<p><b>Оптимистичный:</b> \( q_x^{base} \times 0.7 \) &nbsp;—&nbsp; пониженная смертность</p>
+
+<p>$$ EPV = S \cdot q_x \cdot \sum_{t=1}^{n} \left(\frac{1}{1+i}\right)^t $$</p>
+
+<hr>
+
+<!-- Входные параметры -->
+<h3>Параметры</h3>
+
+<form method="POST" action="{{ url_for('main.scenario_analysis') }}">
+
+    <label>Ставка дисконтирования (i), например 0.05:</label><br>
+    <input type="number" step="0.001" min="0.001" max="0.99" name="discount_rate"
+           value="{{ request.form.get('discount_rate', '0.05') }}" required><br><br>
+
+    <label>Инфляция, например 0.03:</label><br>
+    <input type="number" step="0.001" min="0" max="0.99" name="inflation"
+           value="{{ request.form.get('inflation', '0.03') }}" required><br><br>
+
+    <button type="submit">Рассчитать все сценарии</button>
+
+</form>
+
+<hr>
+
+<!-- Результаты -->
+{% if results %}
+
+<h3>Результаты по сценариям</h3>
+
+<p>Анализируемых договоров: <b>{{ results.baseline.policy_count }}</b></p>
+
+<!-- Сводная таблица -->
+<table border="1" cellpadding="10" cellspacing="0">
+<tr>
+    <th>Показатель</th>
+    <th>🔵 Базовый</th>
+    <th>🔴 Пессимистичный</th>
+    <th>🟢 Оптимистичный</th>
+</tr>
+
+<tr>
+    <td>Суммарный EPV (ожид. выплаты)</td>
+    <td>{{ "{:,.2f}".format(results.baseline.total_epv) }}</td>
+    <td style="color:darkred;">{{ "{:,.2f}".format(results.pessimistic.total_epv) }}</td>
+    <td style="color:darkgreen;">{{ "{:,.2f}".format(results.optimistic.total_epv) }}</td>
+</tr>
+
+<tr>
+    <td>Суммарная нетто-премия</td>
+    <td>{{ "{:,.2f}".format(results.baseline.total_net_p) }}</td>
+    <td style="color:darkred;">{{ "{:,.2f}".format(results.pessimistic.total_net_p) }}</td>
+    <td style="color:darkgreen;">{{ "{:,.2f}".format(results.optimistic.total_net_p) }}</td>
+</tr>
+
+<tr>
+    <td>Суммарный резерв (конец 1-го года)</td>
+    <td>{{ "{:,.2f}".format(results.baseline.total_reserve) }}</td>
+    <td style="color:darkred;">{{ "{:,.2f}".format(results.pessimistic.total_reserve) }}</td>
+    <td style="color:darkgreen;">{{ "{:,.2f}".format(results.optimistic.total_reserve) }}</td>
+</tr>
+
+<tr style="font-weight:bold;">
+    <td>Ожидаемая прибыль портфеля</td>
+    <td {% if results.baseline.total_profit < 0 %}style="color:darkred;"{% endif %}>
+        {{ "{:,.2f}".format(results.baseline.total_profit) }}
+    </td>
+    <td style="color:darkred;">{{ "{:,.2f}".format(results.pessimistic.total_profit) }}</td>
+    <td style="color:darkgreen;">{{ "{:,.2f}".format(results.optimistic.total_profit) }}</td>
+</tr>
+
+</table>
+
+<br>
+
+<!-- График сравнения сценариев -->
+<h3>Сравнение сценариев</h3>
+
+<canvas id="scenarioChart" height="120"></canvas>
+
+<script>
+const labels = ['EPV (выплаты)', 'Нетто-премия', 'Резерв', 'Прибыль'];
+
+const baseline    = [
+    {{ results.baseline.total_epv }},
+    {{ results.baseline.total_net_p }},
+    {{ results.baseline.total_reserve }},
+    {{ results.baseline.total_profit }}
+];
+const pessimistic = [
+    {{ results.pessimistic.total_epv }},
+    {{ results.pessimistic.total_net_p }},
+    {{ results.pessimistic.total_reserve }},
+    {{ results.pessimistic.total_profit }}
+];
+const optimistic  = [
+    {{ results.optimistic.total_epv }},
+    {{ results.optimistic.total_net_p }},
+    {{ results.optimistic.total_reserve }},
+    {{ results.optimistic.total_profit }}
+];
+
+new Chart(document.getElementById('scenarioChart'), {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Базовый',
+                data: baseline,
+                backgroundColor: 'rgba(59,130,246,0.7)'
+            },
+            {
+                label: 'Пессимистичный',
+                data: pessimistic,
+                backgroundColor: 'rgba(239,68,68,0.7)'
+            },
+            {
+                label: 'Оптимистичный',
+                data: optimistic,
+                backgroundColor: 'rgba(34,197,94,0.7)'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: false } }
+    }
+});
+</script>
+
+{% endif %}
+
+{% endblock %}

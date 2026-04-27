@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактирование клиента{% endblock %}
+
+{% block content %}
+
+<h2>Редактирование клиента — {{ client.full_name }}</h2>
+
+<hr>
+
+<form method="POST" action="{{ url_for('clients.edit_client', id=client.id) }}">
+
+    <label>ФИО: <span style="color:red">*</span></label><br>
+    <input type="text" name="full_name" value="{{ client.full_name }}" required><br><br>
+
+    <label>Дата рождения: <span style="color:red">*</span></label><br>
+    <input type="date" name="birth_date" value="{{ client.birth_date }}" required><br><br>
+
+    <label>Пол:</label><br>
+    <select name="gender">
+        <option value="M" {% if client.gender == 'M' %}selected{% endif %}>Мужской</option>
+        <option value="F" {% if client.gender == 'F' %}selected{% endif %}>Женский</option>
+    </select><br><br>
+
+    <label>Телефон:</label><br>
+    <input type="tel" name="phone" value="{{ client.phone or '' }}"><br><br>
+
+    <label>Email:</label><br>
+    <input type="email" name="email" value="{{ client.email or '' }}"><br><br>
+
+    <label>Адрес:</label><br>
+    <input type="text" name="address" value="{{ client.address or '' }}"><br><br>
+
+    <label>Статус:</label><br>
+    <select name="status" id="status" onchange="toggleDeath()">
+        <option value="alive"    {% if client.status == 'alive'    %}selected{% endif %}>Жив</option>
+        <option value="deceased" {% if client.status == 'deceased' %}selected{% endif %}>Умер</option>
+    </select><br><br>
+
+    <div id="death_date_block" style="{{ 'display:block' if client.status == 'deceased' else 'display:none' }}">
+        <label>Дата смерти:</label><br>
+        <input type="date" name="death_date"
+               value="{{ client.death_date if client.death_date else '' }}"><br><br>
+    </div>
+
+    <button type="submit">Сохранить</button>
+
+</form>
+
+<hr>
+
+<a href="{{ url_for('clients.client_detail', id=client.id) }}"><button type="button">Назад</button></a>
+
+<script>
+function toggleDeath() {
+    const status = document.getElementById('status').value;
+    document.getElementById('death_date_block').style.display =
+        status === 'deceased' ? 'block' : 'none';
+}
+</script>
+
+{% endblock %}

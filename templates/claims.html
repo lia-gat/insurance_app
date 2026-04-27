@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Страховые выплаты{% endblock %}
+
+{% block content %}
+
+<h2>Страховые выплаты</h2>
+
+<hr>
+
+<!-- Фильтры -->
+<form method="GET" action="{{ url_for('claim.claims') }}">
+
+    <input type="number" name="policy_id" placeholder="ID договора"
+           value="{{ request.args.get('policy_id', '') }}">
+
+    <select name="reason">
+        <option value="">Все причины</option>
+        <option value="death"    {% if request.args.get('reason') == 'death'    %}selected{% endif %}>Смерть</option>
+        <option value="maturity" {% if request.args.get('reason') == 'maturity' %}selected{% endif %}>Дожитие</option>
+        <option value="surrender"{% if request.args.get('reason') == 'surrender'%}selected{% endif %}>Расторжение</option>
+    </select>
+
+    <button type="submit">Найти</button>
+    <a href="{{ url_for('claim.claims') }}"><button type="button">Сбросить</button></a>
+
+</form>
+
+<hr>
+
+{% if claims %}
+
+<p>Найдено выплат: <b>{{ claims | length }}</b> &nbsp;|&nbsp;
+   Общая утверждённая сумма: <b>{{ "{:,.2f}".format(total_approved) }}</b></p>
+
+<table border="1" cellpadding="8" cellspacing="0">
+<tr>
+    <th>ID</th>
+    <th>Договор</th>
+    <th>Клиент</th>
+    <th>Дата</th>
+    <th>Заявленная сумма</th>
+    <th>Утверждённая сумма</th>
+    <th>Причина</th>
+</tr>
+
+{% for c in claims %}
+<tr>
+    <td>{{ c.id }}</td>
+
+    <td>
+        <a href="{{ url_for('policy.policy_detail', id=c.policy_id) }}">
+            {{ c.policy.contract_number }}
+        </a>
+    </td>
+
+    <td>
+        <a href="{{ url_for('clients.client_detail', id=c.policy.client_id) }}">
+            {{ c.policy.client.full_name }}
+        </a>
+    </td>
+
+    <td>{{ c.claim_date or '—' }}</td>
+
+    <td>{{ "{:,.2f}".format(c.claim_amount or 0) }}</td>
+
+    <td>{{ "{:,.2f}".format(c.approved_amount or 0) }}</td>
+
+    <td>
+        {% if c.reason == 'death' %}⚫ Смерть
+        {% elif c.reason == 'maturity' %}🟢 Дожитие
+        {% elif c.reason == 'surrender' %}🔵 Расторжение
+        {% else %}{{ c.reason }}{% endif %}
+    </td>
+
+</tr>
+{% endfor %}
+
+</table>
+
+{% else %}
+<p>Выплаты не найдены.</p>
+{% endif %}
+
+{% endblock %}

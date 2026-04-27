@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Договор {{ policy.contract_number }}{% endblock %}
+
+{% block content %}
+
+<h2>Договор № {{ policy.contract_number }}</h2>
+
+<hr>
+
+<!-- Основная информация -->
+<h3>Информация</h3>
+
+<p><b>Клиент:</b>
+    <a href="{{ url_for('clients.client_detail', id=policy.client_id) }}">
+        {{ policy.client.full_name }}
+    </a>
+</p>
+<p><b>Тип страхования:</b> {{ policy.insurance_type }}</p>
+<p><b>Дата заключения:</b> {{ policy.issue_date }}</p>
+<p><b>Срок:</b> {{ policy.term_years }} лет</p>
+<p><b>Премия:</b> {{ "{:,.2f}".format(policy.premium or 0) }} ({{ policy.premium_frequency }})</p>
+<p><b>Страховая сумма:</b> {{ "{:,.2f}".format(policy.sum_insured or 0) }}</p>
+<p><b>Процентная ставка:</b> {{ policy.interest_rate or 0 }}%</p>
+<p><b>Статус:</b>
+    {% if policy.status == 'active' %}🟢 Активный
+    {% elif policy.status == 'closed' %}⚪ Закрыт
+    {% else %}🔴 Истёк{% endif %}
+</p>
+
+{% if policy.beneficiary_name %}
+<p><b>Выгодоприобретатель:</b> {{ policy.beneficiary_name }}
+    ({{ policy.beneficiary_relation or '—' }})</p>
+<p><b>Телефон выгодоприобретателя:</b> {{ policy.beneficiary_phone or '—' }}</p>
+<p><b>Email выгодоприобретателя:</b> {{ policy.beneficiary_email or '—' }}</p>
+{% endif %}
+
+<hr>
+
+<!-- Финансовая аналитика -->
+<h3>Финансовая аналитика</h3>
+
+<p><b>Всего оплачено взносов:</b> {{ "{:,.2f}".format(total_paid) }}</p>
+<p><b>Всего страховых выплат:</b> {{ "{:,.2f}".format(total_claims) }}</p>
+<p><b>Страховой резерв:</b> {{ "{:,.2f}".format(reserve) }}</p>
+<p><b>Оценка прибыльности:</b> {{ "{:,.2f}".format(total_paid - total_claims) }}</p>
+
+<a href="{{ url_for('policy.calculations', policy_id=policy.id) }}">
+    <button>Актуарный расчёт</button>
+</a>
+
+<hr>
+
+<!-- График динамики резерва -->
+<h3>Динамика договора</h3>
+
+<canvas id="resChart" height="100"></canvas>
+
+<script>
+new Chart(document.getElementById('resChart'), {
+    type: 'line',
+    data: {
+        labels: {{ res_dates | tojson }},
+        datasets: [{
+            label: 'Резерв по договору',
+            data: {{ res_values | tojson }},
+            borderColor: '#10b981',
+            fill: true,
+            backgroundColor: 'rgba(16,185,129,0.1)'
+        }]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+});
+</script>
+
+<hr>
+
+<!-- Платёжное расписание -->
+{% if schedule %}
+<h3>Платёжное расписание</h3>
+<table border="1" cellpadding="6">
+<tr><th>Период</th><th>Плановая сумма</th></tr>
+{% for s in schedule %}
+<tr>
+    <td>{{ s.date }}</td>
+    <td>{{ "{:,.2f}".format(s.amount) }}</td>
+</tr>
+{% endfor %}
+</table>
+<hr>
+{% endif %}
+
+<!-- Платежи -->
+<h3>Платежи</h3>
+
+<a href="{{ url_for('payment.add_payment', policy_id=policy.id) }}">
+    <button>+ Добавить платёж</button>
+</a><br><br>
+
+{% if payments %}
+<table border="1" cellpadding="6">
+<tr>
+    <th>Дата</th>
+    <th>Сумма</th>
+    <th>Тип</th>
+    <th>Статус</th>
+</tr>
+{% for p in payments %}
+<tr>
+    <td>{{ p.payment_date }}</td>
+    <td>{{ "{:,.2f}".format(p.amount) }}</td>
+    <td>{{ p.payment_type }}</td>
+    <td>{{ p.status }}</td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>Нет платежей.</p>
+{% endif %}
+
+<hr>
+
+<!-- Выплаты -->
+<h3>Страховые выплаты</h3>
+
+<a href="{{ url_for('claim.add_claim', policy_id=policy.id) }}">
+    <button>+ Добавить выплату</button>
+</a><br><br>
+
+{% if claims %}
+<table border="1" cellpadding="6">
+<tr>
+    <th>Дата</th>
+    <th>Заявленная сумма</th>
+    <th>Утверждённая сумма</th>
+    <th>Причина</th>
+</tr>
+{% for c in claims %}
+<tr>
+    <td>{{ c.claim_date or '—' }}</td>
+    <td>{{ "{:,.2f}".format(c.claim_amount or 0) }}</td>
+    <td>{{ "{:,.2f}".format(c.approved_amount or 0) }}</td>
+    <td>{{ c.reason }}</td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>Нет выплат.</p>
+{% endif %}
+
+<hr>
+
+<!-- История изменений -->
+<h3>История изменений</h3>
+
+{% if history %}
+<table border="1" cellpadding="6">
+<tr>
+    <th>Дата</th>
+    <th>Поле</th>
+    <th>Было</th>
+    <th>Стало</th>
+</tr>
+{% for h in history %}
+<tr>
+    <td>{{ h.change_date }}</td>
+    <td>{{ h.field_name }}</td>
+    <td>{{ h.old_value }}</td>
+    <td>{{ h.new_value }}</td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>Нет истории изменений.</p>
+{% endif %}
+
+<hr>
+
+<!-- Действия -->
+<a href="{{ url_for('policy.edit_policy', id=policy.id) }}">
+    <button>Редактировать</button>
+</a>
+
+<form method="POST" action="{{ url_for('policy.delete_policy', id=policy.id) }}"
+      style="display:inline;"
+      onsubmit="return confirm('Удалить договор {{ policy.contract_number }}?')">
+    <button type="submit" style="background:red;color:white;">Удалить договор</button>
+</form>
+
+<a href="{{ url_for('clients.client_detail', id=policy.client_id) }}">
+    <button type="button">Назад к клиенту</button>
+</a>
+
+{% endblock %}

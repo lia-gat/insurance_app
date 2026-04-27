@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Новый клиент{% endblock %}
+
+{% block content %}
+
+<h2>Создание нового клиента</h2>
+
+<hr>
+
+<form method="POST" action="{{ url_for('clients.add_client') }}">
+
+    <label>ФИО: <span style="color:red">*</span></label><br>
+    <input type="text" name="full_name" required><br><br>
+
+    <label>Дата рождения: <span style="color:red">*</span></label><br>
+    <input type="date" name="birth_date" required><br><br>
+
+    <label>Пол:</label><br>
+    <select name="gender">
+        <option value="M">Мужской</option>
+        <option value="F">Женский</option>
+    </select><br><br>
+
+    <label>Телефон:</label><br>
+    <input type="tel" name="phone" placeholder="+7 (___) ___-__-__"><br><br>
+
+    <label>Email:</label><br>
+    <input type="email" name="email"><br><br>
+
+    <label>Адрес:</label><br>
+    <input type="text" name="address"><br><br>
+
+    <label>Статус:</label><br>
+    <select name="status" id="status" onchange="toggleDeath()">
+        <option value="alive">Жив</option>
+        <option value="deceased">Умер</option>
+    </select><br><br>
+
+    <div id="death_date_block" style="display:none;">
+        <label>Дата смерти:</label><br>
+        <input type="date" name="death_date"><br><br>
+    </div>
+
+    <button type="submit">Создать клиента</button>
+
+</form>
+
+<hr>
+
+<a href="{{ url_for('clients.clients') }}"><button type="button">Назад</button></a>
+
+<script>
+function toggleDeath() {
+    const status = document.getElementById('status').value;
+    document.getElementById('death_date_block').style.display =
+        status === 'deceased' ? 'block' : 'none';
+}
+</script>
+
+{% endblock %}

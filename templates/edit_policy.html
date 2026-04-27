@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактирование договора {{ policy.contract_number }}{% endblock %}
+
+{% block content %}
+
+<h2>Редактирование договора № {{ policy.contract_number }}</h2>
+
+<p>
+    Клиент:
+    <a href="{{ url_for('clients.client_detail', id=policy.client_id) }}">
+        {{ policy.client.full_name }}
+    </a>
+</p>
+
+<hr>
+
+<form method="POST" action="{{ url_for('policy.edit_policy', id=policy.id) }}">
+
+    <!-- Тип страхования -->
+    <label>Тип страхования: <span style="color:red">*</span></label><br>
+    <select name="insurance_type" required>
+        <option value="life"      {% if policy.insurance_type == 'life'      %}selected{% endif %}>Страхование жизни (рисковое)</option>
+        <option value="endowment" {% if policy.insurance_type == 'endowment' %}selected{% endif %}>Накопительное страхование жизни</option>
+        <option value="term"      {% if policy.insurance_type == 'term'      %}selected{% endif %}>Срочное страхование</option>
+        <option value="annuity"   {% if policy.insurance_type == 'annuity'   %}selected{% endif %}>Аннуитет</option>
+        <option value="mixed"     {% if policy.insurance_type == 'mixed'     %}selected{% endif %}>Смешанное страхование</option>
+    </select><br><br>
+
+    <!-- Срок -->
+    <label>Срок договора (лет): <span style="color:red">*</span></label><br>
+    <input type="number" name="term_years" min="1" max="50"
+           value="{{ policy.term_years }}" required><br><br>
+
+    <!-- Страховая сумма -->
+    <label>Страховая сумма: <span style="color:red">*</span></label><br>
+    <input type="number" name="sum_insured" step="0.01" min="0"
+           value="{{ policy.sum_insured }}" required><br><br>
+
+    <!-- Премия -->
+    <label>Регулярный взнос: <span style="color:red">*</span></label><br>
+    <input type="number" name="premium" step="0.01" min="0"
+           value="{{ policy.premium }}" required><br><br>
+
+    <!-- Периодичность -->
+    <label>Периодичность взносов:</label><br>
+    <select name="premium_frequency">
+        <option value="monthly" {% if policy.premium_frequency == 'monthly' %}selected{% endif %}>Ежемесячно</option>
+        <option value="yearly"  {% if policy.premium_frequency == 'yearly'  %}selected{% endif %}>Ежегодно</option>
+    </select><br><br>
+
+    <!-- Ставка доходности -->
+    <label>Ставка доходности, %:</label><br>
+    <input type="number" name="interest_rate" step="0.01" min="0" max="100"
+           value="{{ policy.interest_rate or 0 }}"><br><br>
+
+    <!-- Статус -->
+    <label>Статус договора:</label><br>
+    <select name="status">
+        <option value="active"  {% if policy.status == 'active'  %}selected{% endif %}>Активный</option>
+        <option value="closed"  {% if policy.status == 'closed'  %}selected{% endif %}>Закрыт</option>
+        <option value="expired" {% if policy.status == 'expired' %}selected{% endif %}>Истёк</option>
+    </select><br><br>
+
+    <hr>
+    <h4>Выгодоприобретатель</h4>
+
+    <label>ФИО выгодоприобретателя:</label><br>
+    <input type="text" name="beneficiary_name"
+           value="{{ policy.beneficiary_name or '' }}"><br><br>
+
+    <label>Степень родства:</label><br>
+    <select name="beneficiary_relation">
+        <option value="">— Не указано —</option>
+        <option value="spouse"  {% if policy.beneficiary_relation == 'spouse'  %}selected{% endif %}>Супруг(а)</option>
+        <option value="child"   {% if policy.beneficiary_relation == 'child'   %}selected{% endif %}>Ребёнок</option>
+        <option value="parent"  {% if policy.beneficiary_relation == 'parent'  %}selected{% endif %}>Родитель</option>
+        <option value="sibling" {% if policy.beneficiary_relation == 'sibling' %}selected{% endif %}>Брат/Сестра</option>
+        <option value="other"   {% if policy.beneficiary_relation == 'other'   %}selected{% endif %}>Иное</option>
+    </select><br><br>
+
+    <label>Телефон выгодоприобретателя:</label><br>
+    <input type="tel" name="beneficiary_phone"
+           value="{{ policy.beneficiary_phone or '' }}"><br><br>
+
+    <label>Email выгодоприобретателя:</label><br>
+    <input type="email" name="beneficiary_email"
+           value="{{ policy.beneficiary_email or '' }}"><br><br>
+
+    <hr>
+
+    <button type="submit">Сохранить изменения</button>
+
+</form>
+
+<hr>
+
+<a href="{{ url_for('policy.policy_detail', id=policy.id) }}">
+    <button type="button">Отмена</button>
+</a>
+
+{% endblock %}

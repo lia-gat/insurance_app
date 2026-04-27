@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Платежи{% endblock %}
+
+{% block content %}
+
+<h2>Платежи</h2>
+
+<hr>
+
+<!-- Фильтры -->
+<form method="GET" action="{{ url_for('payment.payments') }}">
+
+    <input type="number" name="policy_id" placeholder="ID договора"
+           value="{{ request.args.get('policy_id', '') }}">
+
+    <select name="payment_type">
+        <option value="">Все типы</option>
+        <option value="premium"             {% if request.args.get('payment_type') == 'premium'             %}selected{% endif %}>Взнос</option>
+        <option value="penalty"             {% if request.args.get('payment_type') == 'penalty'             %}selected{% endif %}>Штраф</option>
+        <option value="partial_withdrawal"  {% if request.args.get('payment_type') == 'partial_withdrawal'  %}selected{% endif %}>Частичное изъятие</option>
+    </select>
+
+    <select name="status">
+        <option value="">Все статусы</option>
+        <option value="confirmed" {% if request.args.get('status') == 'confirmed' %}selected{% endif %}>Подтверждён</option>
+        <option value="pending"   {% if request.args.get('status') == 'pending'   %}selected{% endif %}>Ожидает</option>
+        <option value="overdue"   {% if request.args.get('status') == 'overdue'   %}selected{% endif %}>Просрочен</option>
+    </select>
+
+    <select name="overdue">
+        <option value="">Все платежи</option>
+        <option value="1" {% if request.args.get('overdue') == '1' %}selected{% endif %}>Только просроченные</option>
+    </select>
+
+    <button type="submit">Найти</button>
+    <a href="{{ url_for('payment.payments') }}"><button type="button">Сбросить</button></a>
+
+</form>
+
+<hr>
+
+{% if payments %}
+
+<!-- Итог -->
+<p>Найдено платежей: <b>{{ payments | length }}</b> &nbsp;|&nbsp;
+   Общая сумма: <b>{{ "{:,.2f}".format(total_amount) }}</b></p>
+
+<table border="1" cellpadding="8" cellspacing="0">
+<tr>
+    <th>ID</th>
+    <th>Договор</th>
+    <th>Клиент</th>
+    <th>Дата</th>
+    <th>Сумма</th>
+    <th>Тип</th>
+    <th>Статус</th>
+</tr>
+
+{% for p in payments %}
+<tr {% if p.status == 'overdue' or (p.payment_date < today and p.status != 'confirmed') %}
+    style="background:#fff3cd;"{% endif %}>
+
+    <td>{{ p.id }}</td>
+
+    <td>
+        <a href="{{ url_for('policy.policy_detail', id=p.policy_id) }}">
+            {{ p.policy.contract_number }}
+        </a>
+    </td>
+
+    <td>
+        <a href="{{ url_for('clients.client_detail', id=p.policy.client_id) }}">
+            {{ p.policy.client.full_name }}
+        </a>
+    </td>
+
+    <td>{{ p.payment_date }}</td>
+
+    <td>{{ "{:,.2f}".format(p.amount) }}</td>
+
+    <td>
+        {% if p.payment_type == 'premium' %}Взнос
+        {% elif p.payment_type == 'penalty' %}Штраф
+        {% elif p.payment_type == 'partial_withdrawal' %}Частичное изъятие
+        {% else %}{{ p.payment_type }}{% endif %}
+    </td>
+
+    <td>
+        {% if p.status == 'confirmed' %}✅ Подтверждён
+        {% elif p.status == 'overdue' %}🔴 Просрочен
+        {% else %}⏳ Ожидает{% endif %}
+    </td>
+
+</tr>
+{% endfor %}
+
+</table>
+
+{% else %}
+<p>Платежи не найдены.</p>
+{% endif %}
+
+{% endblock %}

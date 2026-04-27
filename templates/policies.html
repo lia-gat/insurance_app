@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Договоры{% endblock %}
+
+{% block content %}
+
+<h2>Договоры</h2>
+
+<hr>
+
+<!-- Поиск и фильтры -->
+<form method="GET" action="{{ url_for('policy.policies') }}">
+
+    <input type="text" name="contract_number" placeholder="Номер договора"
+           value="{{ request.args.get('contract_number', '') }}">
+
+    <input type="text" name="client_name" placeholder="ФИО клиента"
+           value="{{ request.args.get('client_name', '') }}">
+
+    <input type="text" name="insurance_type" placeholder="Тип страхования"
+           value="{{ request.args.get('insurance_type', '') }}">
+
+    <select name="status">
+        <option value="">Все статусы</option>
+        <option value="active"  {% if request.args.get('status') == 'active'  %}selected{% endif %}>Активный</option>
+        <option value="closed"  {% if request.args.get('status') == 'closed'  %}selected{% endif %}>Закрыт</option>
+        <option value="expired" {% if request.args.get('status') == 'expired' %}selected{% endif %}>Истёк</option>
+    </select>
+
+    <button type="submit">Найти</button>
+    <a href="{{ url_for('policy.policies') }}"><button type="button">Сбросить</button></a>
+
+</form>
+
+<hr>
+
+<a href="{{ url_for('policy.add_policy') }}"><button>+ Новый договор</button></a>
+
+<hr>
+
+<!-- Таблица договоров -->
+{% if policies %}
+
+<table border="1" cellpadding="8" cellspacing="0">
+<tr>
+    <th>№ договора</th>
+    <th>Клиент</th>
+    <th>Тип</th>
+    <th>Срок</th>
+    <th>Страховая сумма</th>
+    <th>Премия</th>
+    <th>Статус</th>
+    <th>Действие</th>
+</tr>
+
+{% for p in policies %}
+<tr>
+    <td>
+        <a href="{{ url_for('policy.policy_detail', id=p.id) }}">{{ p.contract_number }}</a>
+    </td>
+    <td>
+        <a href="{{ url_for('clients.client_detail', id=p.client.id) }}">{{ p.client.full_name }}</a>
+    </td>
+    <td>{{ p.insurance_type }}</td>
+    <td>{{ p.term_years }} лет</td>
+    <td>{{ "{:,.2f}".format(p.sum_insured or 0) }}</td>
+    <td>{{ "{:,.2f}".format(p.premium or 0) }}</td>
+    <td>
+        {% if p.status == 'active' %}🟢 Активный
+        {% elif p.status == 'closed' %}⚪ Закрыт
+        {% else %}🔴 Истёк{% endif %}
+    </td>
+    <td>
+        <a href="{{ url_for('policy.policy_detail', id=p.id) }}">Открыть</a>
+    </td>
+</tr>
+{% endfor %}
+
+</table>
+
+<hr>
+
+<!-- Аналитика портфеля -->
+<h3>Аналитика портфеля</h3>
+<p>Всего договоров: <b>{{ policies | length }}</b></p>
+<p>Активных: <b>{{ policies | selectattr('status', 'equalto', 'active') | list | length }}</b></p>
+<p>Общая страховая сумма: <b>{{ "{:,.2f}".format(policies | sum(attribute='sum_insured')) }}</b></p>
+<p>Средняя премия:
+    <b>
+    {% if policies | length > 0 %}
+        {{ "{:,.2f}".format(policies | sum(attribute='premium') / (policies | length)) }}
+    {% else %}0.00{% endif %}
+    </b>
+</p>
+
+{% else %}
+<p>Договоры не найдены.</p>
+{% endif %}
+
+{% endblock %}

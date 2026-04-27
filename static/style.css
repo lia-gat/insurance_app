@@ -1,0 +1,476 @@
+/* ============================================================
+   style.css — Система долгосрочного страхования жизни
+   ============================================================ */
+
+/* ── Сброс и базовые настройки ─────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 15px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f4f8;
+    color: #1e293b;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* ── Шапка ──────────────────────────────────────────────────── */
+header {
+    background: #1e3a5f;
+    color: #ffffff;
+    padding: 18px 32px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+header h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* ── Навигация ──────────────────────────────────────────────── */
+nav {
+    background: #1a3050;
+    padding: 0 32px;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+nav a {
+    color: #a8c4e0;
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 12px 16px;
+    display: inline-block;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+nav a:hover {
+    color: #ffffff;
+    border-bottom-color: #4a9edd;
+}
+
+nav a.active {
+    color: #ffffff;
+    border-bottom-color: #4a9edd;
+    font-weight: 600;
+}
+
+/* ── Контейнер ──────────────────────────────────────────────── */
+.container {
+    max-width: 1200px;
+    margin: 28px auto;
+    padding: 0 24px;
+}
+
+/* ── Заголовки ──────────────────────────────────────────────── */
+h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 8px;
+}
+
+h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #2d4e72;
+    margin: 20px 0 10px;
+}
+
+h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #334155;
+    margin: 14px 0 8px;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #cbd5e1;
+    margin: 20px 0;
+}
+
+p {
+    margin-bottom: 8px;
+}
+
+/* ── Flash-сообщения ────────────────────────────────────────── */
+.flash {
+    padding: 12px 18px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.flash-success {
+    background: #dcfce7;
+    color: #166534;
+    border-left: 4px solid #22c55e;
+}
+
+.flash-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border-left: 4px solid #3b82f6;
+}
+
+.flash-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border-left: 4px solid #ef4444;
+}
+
+.flash-warning {
+    background: #fef9c3;
+    color: #854d0e;
+    border-left: 4px solid #eab308;
+}
+
+/* ── Карточки статистики (главная) ──────────────────────────── */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.stat-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 20px 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border-top: 4px solid #3b82f6;
+}
+
+.stat-card--warn {
+    border-top-color: #ef4444;
+}
+
+.stat-card--profit {
+    border-top-color: #22c55e;
+}
+
+.stat-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e3a5f;
+}
+
+/* ── Сетка графиков ─────────────────────────────────────────── */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+    gap: 20px;
+    margin: 16px 0;
+}
+
+.chart-block {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.chart-block h4 {
+    margin-top: 0;
+    margin-bottom: 14px;
+    color: #475569;
+}
+
+/* ── Таблицы ────────────────────────────────────────────────── */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+}
+
+table th {
+    background: #1e3a5f;
+    color: #ffffff;
+    padding: 11px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: middle;
+}
+
+table tr:last-child td {
+    border-bottom: none;
+}
+
+table tr:hover td {
+    background: #f8fafc;
+}
+
+table tr.overdue td {
+    background: #fff7ed;
+}
+
+/* Убираем устаревший атрибут border у таблиц */
+table[border] {
+    border: none;
+}
+
+/* ── Ссылки ─────────────────────────────────────────────────── */
+a {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+    color: #1d4ed8;
+}
+
+/* ── Кнопки ─────────────────────────────────────────────────── */
+button,
+input[type="submit"] {
+    display: inline-block;
+    padding: 9px 20px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: #2563eb;
+    color: #ffffff;
+    transition: background 0.2s, transform 0.1s;
+    line-height: 1.4;
+}
+
+button:hover,
+input[type="submit"]:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Вторичная кнопка (Назад, Отмена) */
+button[type="button"] {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+button[type="button"]:hover {
+    background: #cbd5e1;
+}
+
+/* Опасная кнопка (Удалить) */
+button[style*="red"],
+.btn-danger {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+button[style*="red"]:hover,
+.btn-danger:hover {
+    background: #dc2626 !important;
+}
+
+/* ── Формы ──────────────────────────────────────────────────── */
+form {
+    background: #ffffff;
+    padding: 24px 28px;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    max-width: 700px;
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 4px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #1e293b;
+    background: #f8fafc;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    background: #ffffff;
+}
+
+input[readonly] {
+    background: #f1f5f9;
+    color: #64748b;
+    cursor: default;
+}
+
+/* Форма поиска/фильтров — компактная горизонтальная */
+form.search-form,
+form[method="GET"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    padding: 14px 16px;
+    max-width: none;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+form[method="GET"] input,
+form[method="GET"] select {
+    width: auto;
+    min-width: 140px;
+    flex: 1;
+}
+
+form[method="GET"] button {
+    flex-shrink: 0;
+}
+
+/* ── Блоки информации ───────────────────────────────────────── */
+.info-block {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    margin-bottom: 16px;
+}
+
+.info-block p {
+    display: flex;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.92rem;
+}
+
+.info-block p:last-child {
+    border-bottom: none;
+}
+
+.info-block b {
+    min-width: 180px;
+    color: #64748b;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+/* ── Таблица результатов расчёта ────────────────────────────── */
+table.results-table th {
+    background: #334155;
+}
+
+table.results-table tr.highlight-blue td {
+    background: #eff6ff;
+    font-weight: 600;
+}
+
+table.results-table tr.highlight-green td {
+    background: #f0fdf4;
+    font-weight: 600;
+}
+
+table.results-table tr.highlight-orange td {
+    background: #fff7ed;
+    font-weight: 600;
+}
+
+/* ── Бейджи статусов ────────────────────────────────────────── */
+.badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.badge-active  { background: #dcfce7; color: #166534; }
+.badge-closed  { background: #f1f5f9; color: #475569; }
+.badge-expired { background: #fee2e2; color: #991b1b; }
+.badge-alive   { background: #dcfce7; color: #166534; }
+.badge-deceased{ background: #f1f5f9; color: #475569; }
+
+/* ── Сценарный анализ — цвета ───────────────────────────────── */
+.scenario-base     { color: #1d4ed8; font-weight: 700; }
+.scenario-pessimist{ color: #b91c1c; font-weight: 700; }
+.scenario-optimist { color: #15803d; font-weight: 700; }
+
+/* ── Адаптивность ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+    header { padding: 14px 16px; }
+    nav    { padding: 0 12px; }
+    nav a  { padding: 10px 10px; font-size: 0.82rem; }
+
+    .container { padding: 0 12px; margin: 14px auto; }
+
+    .stats-grid  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .charts-grid { grid-template-columns: 1fr; }
+
+    table { font-size: 0.8rem; }
+    table th, table td { padding: 8px 10px; }
+
+    form { padding: 16px; }
+
+    form[method="GET"] { flex-direction: column; }
+    form[method="GET"] input,
+    form[method="GET"] select { width: 100%; min-width: unset; }
+}
+
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .stat-value { font-size: 1.4rem; }
+
+    h2 { font-size: 1.25rem; }
+}

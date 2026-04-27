@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}Резервы{% endblock %}
+
+{% block content %}
+
+{% if policy %}
+
+{# ============================================================
+   Резервы по конкретному договору
+   ============================================================ #}
+
+<h2>Резерв по договору № {{ policy.contract_number }}</h2>
+
+<p>
+    Клиент:
+    <a href="{{ url_for('clients.client_detail', id=policy.client_id) }}">
+        {{ policy.client.full_name }}
+    </a>
+    &nbsp;|&nbsp;
+    <a href="{{ url_for('policy.policy_detail', id=policy.id) }}">
+        К договору
+    </a>
+</p>
+
+<hr>
+
+{% if reserve_rows %}
+
+<p>Записей резерва: <b>{{ reserve_rows | length }}</b></p>
+
+<table border="1" cellpadding="8" cellspacing="0">
+<tr>
+    <th>Дата</th>
+    <th>Сумма резерва</th>
+</tr>
+{% for r in reserve_rows %}
+<tr>
+    <td>{{ r.date }}</td>
+    <td>{{ "{:,.2f}".format(r.reserve_amount) }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<br>
+
+<canvas id="policyResChart" height="120"></canvas>
+
+<script>
+new Chart(document.getElementById('policyResChart'), {
+    type: 'line',
+    data: {
+        labels: {{ reserve_rows | map(attribute='date') | map('string') | list | tojson }},
+        datasets: [{
+            label: 'Резерв по договору',
+            data: {{ reserve_rows | map(attribute='reserve_amount') | map('float') | list | tojson }},
+            borderColor: '#3b82f6',
+            fill: true,
+            backgroundColor: 'rgba(59,130,246,0.1)'
+        }]
+    },
+    options: {
+        scales: { y: { beginAtZero: true } }
+    }
+});
+</script>
+
+{% else %}
+<p>Данные о резервах по этому договору ещё не внесены.</p>
+{% endif %}
+
+{% else %}
+
+{# ============================================================
+   Общие резервы компании
+   ============================================================ #}
+
+<h2>Резервы компании</h2>
+
+<hr>
+
+<h3>Формула нетто-резерва (prospective)</h3>
+
+<p>$$ {}_tV = EPV(\text{будущих выплат}) - P_{net} \cdot a_{\overline{n-t}|} $$</p>
+
+<p style="font-size:0.9em;color:#666;">
+    Резерв = приведённая стоимость будущих обязательств страховщика
+    минус приведённая стоимость будущих взносов страхователя.
+</p>
+
+<hr>
+
+<!-- Динамика суммарного резерва -->
+<h3>Динамика суммарного резерва</h3>
+
+{% if dyn_labels %}
+<canvas id="dynChart" height="100"></canvas>
+<script>
+new Chart(document.getElementById('dynChart'), {
+    type: 'line',
+    data: {
+        labels: {{ dyn_labels | tojson }},
+        datasets: [{
+            label: 'Суммарный резерв',
+            data: {{ dyn_values | tojson }},
+            borderColor: '#10b981',
+            fill: true,
+            backgroundColor: 'rgba(16,185,129,0.1)'
+        }]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+});
+</script>
+{% else %}
+<p style="color:#999;">Нет данных о динамике резерва.</p>
+{% endif %}
+
+<hr>
+
+<!-- Итог по компании -->
+<p>
+    Суммарный резерв компании (все активные договоры):
+    <b>{{ "{:,.2f}".format(total_reserve) }}</b>
+</p>
+
+<hr>
+
+<!-- Таблица резервов по договорам -->
+<h3>Резервы по договорам</h3>
+
+{% if all_policies %}
+
+<table border="1" cellpadding="8" cellspacing="0">
+<tr>
+    <th>Договор</th>
+    <th>Клиент</th>
+    <th>Тип</th>
+    <th>Страховая сумма</th>
+    <th>Резерв</th>
+    <th>Детали</th>
+</tr>
+
+{% for row in all_policies %}
+<tr>
+    <td>
+        <a href="{{ url_for('policy.policy_detail', id=row.policy.id) }}">
+            {{ row.policy.contract_number }}
+        </a>
+    </td>
+    <td>
+        <a href="{{ url_for('clients.client_detail', id=row.policy.client_id) }}">
+            {{ row.policy.client.full_name }}
+        </a>
+    </td>
+    <td>{{ row.policy.insurance_type }}</td>
+    <td>{{ "{:,.2f}".format(row.policy.sum_insured or 0) }}</td>
+    <td>
+        {% if row.reserve > 0 %}
+            {{ "{:,.2f}".format(row.reserve) }}
+        {% else %}
+            <span style="color:#999;">Нет данных</span>
+        {% endif %}
+    </td>
+    <td>
+        <a href="{{ url_for('main.reserves') }}?policy_id={{ row.policy.id }}">
+            История
+        </a>
+    </td>
+</tr>
+{% endfor %}
+
+</table>
+
+{% else %}
+<p>Нет активных договоров.</p>
+{% endif %}
+
+{% endif %}
+
+<hr>
+
+<a href="{{ url_for('main.index') }}"><button type="button">На главную</button></a>
+
+{% endblock %}

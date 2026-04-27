@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Главная — Страхование жизни{% endblock %}
+
+{% block content %}
+
+<h2>Портфель компании</h2>
+
+<hr>
+
+<!-- Сводные показатели -->
+<div class="stats-grid">
+
+    <div class="stat-card">
+        <div class="stat-label">Клиентов</div>
+        <div class="stat-value">{{ total_clients }}</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Всего договоров</div>
+        <div class="stat-value">{{ total_policies }}</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Активных договоров</div>
+        <div class="stat-value">{{ active_policies }}</div>
+    </div>
+
+    <div class="stat-card stat-card--warn">
+        <div class="stat-label">Просроченных платежей</div>
+        <div class="stat-value">{{ overdue_payments }}</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Страховой портфель</div>
+        <div class="stat-value">{{ "{:,.2f}".format(total_portfolio) }}</div>
+    </div>
+
+    <div class="stat-card stat-card--profit">
+        <div class="stat-label">Ожидаемая прибыль</div>
+        <div class="stat-value">{{ "{:,.2f}".format(expected_profit) }}</div>
+    </div>
+
+</div>
+
+<hr>
+
+<!-- Графики аналитики -->
+<h3>Аналитика</h3>
+
+<div class="charts-grid">
+
+    <!-- График платёжного расписания -->
+    <div class="chart-block">
+        <h4>Платёжный поток (последние 12 мес.)</h4>
+        <canvas id="payChart" height="200"></canvas>
+    </div>
+
+    <!-- Рост резерва -->
+    <div class="chart-block">
+        <h4>Динамика резерва компании</h4>
+        <canvas id="reserveChart" height="200"></canvas>
+    </div>
+
+    <!-- Возрастное распределение -->
+    <div class="chart-block">
+        <h4>Возрастное распределение клиентов</h4>
+        <canvas id="ageChart" height="200"></canvas>
+    </div>
+
+    <!-- Таблица смертности qx -->
+    <div class="chart-block">
+        <h4>Смертность qx (‰) из таблицы</h4>
+        <canvas id="mortChart" height="200"></canvas>
+    </div>
+
+</div>
+
+<script>
+const payLabels    = {{ pay_labels | tojson }};
+const payValues    = {{ pay_values | tojson }};
+const resLabels    = {{ reserve_dates | tojson }};
+const resValues    = {{ reserve_values | tojson }};
+const ageLabels    = {{ age_labels | tojson }};
+const ageValues    = {{ age_values | tojson }};
+const mortAges     = {{ mort_ages | tojson }};
+const mortMale     = {{ mort_male | tojson }};
+const mortFemale   = {{ mort_female | tojson }};
+
+new Chart(document.getElementById('payChart'), {
+    type: 'bar',
+    data: {
+        labels: payLabels,
+        datasets: [{ label: 'Взносы', data: payValues, backgroundColor: 'rgba(59,130,246,0.6)' }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('reserveChart'), {
+    type: 'line',
+    data: {
+        labels: resLabels,
+        datasets: [{ label: 'Резерв', data: resValues, borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16,185,129,0.1)' }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('ageChart'), {
+    type: 'bar',
+    data: {
+        labels: ageLabels,
+        datasets: [{ label: 'Клиентов', data: ageValues, backgroundColor: 'rgba(139,92,246,0.6)' }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('mortChart'), {
+    type: 'line',
+    data: {
+        labels: mortAges,
+        datasets: [
+            { label: 'Мужчины', data: mortMale,   borderColor: '#3b82f6', fill: false },
+            { label: 'Женщины', data: mortFemale, borderColor: '#ec4899', fill: false }
+        ]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+});
+</script>
+
+{% endblock %}

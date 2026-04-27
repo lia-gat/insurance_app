@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Результат накопления{% endblock %}
+
+{% block content %}
+
+<h2>Результат расчёта накопления</h2>
+
+<hr>
+
+<h3>Используемые формулы</h3>
+
+<p><b>1. Дисконтирование:</b></p>
+<p>$$ PV = \frac{FV}{(1 + i)^t} $$</p>
+
+<p><b>2. Ожидаемая приведённая стоимость выплат (EPV):</b></p>
+<p>$$ EPV = \sum_{t=1}^{n} S \cdot q_x \cdot v^t $$</p>
+
+<p><b>3. Аннуитет страховых взносов:</b></p>
+<p>$$ a_{\overline{n}|} = \sum_{t=1}^{n} v^t $$</p>
+
+<p><b>4. Страховая премия:</b></p>
+<p>$$ P = \frac{EPV}{a_{\overline{n}|}} $$</p>
+
+<hr>
+
+<!-- Таблица накопления -->
+{% if data %}
+<h3>График накопления</h3>
+
+<table border="1" cellpadding="8">
+<tr>
+    <th>Год</th>
+    <th>Взнос</th>
+    <th>Накопленная сумма</th>
+    <th>Начисленные проценты</th>
+</tr>
+{% for row in data %}
+<tr>
+    <td>{{ row.year }}</td>
+    <td>{{ "{:,.2f}".format(row.premium) }}</td>
+    <td>{{ "{:,.2f}".format(row.accumulated) }}</td>
+    <td>{{ "{:,.2f}".format(row.interest) }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<canvas id="accumChart" height="100" style="margin-top:20px;"></canvas>
+
+<script>
+new Chart(document.getElementById('accumChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ data | map(attribute='year') | list | tojson }},
+        datasets: [
+            {
+                label: 'Накопленная сумма',
+                data: {{ data | map(attribute='accumulated') | list | tojson }},
+                backgroundColor: 'rgba(59,130,246,0.6)'
+            },
+            {
+                label: 'Проценты',
+                data: {{ data | map(attribute='interest') | list | tojson }},
+                backgroundColor: 'rgba(16,185,129,0.6)'
+            }
+        ]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+});
+</script>
+
+{% endif %}
+
+<hr>
+
+<a href="{{ url_for('policy.policies') }}"><button type="button">К договорам</button></a>
+
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Клиент — {{ client.full_name }}{% endblock %}
+
+{% block content %}
+
+<h2>Карточка клиента</h2>
+
+<!-- Основная информация -->
+<div>
+    <p><b>ID:</b> {{ client.id }}</p>
+    <p><b>ФИО:</b> {{ client.full_name }}</p>
+    <p><b>Дата рождения:</b> {{ client.birth_date }}</p>
+    <p><b>Возраст:</b> {{ client.age }} лет</p>
+    <p><b>Пол:</b>
+        {% if client.gender == 'M' %}Мужской
+        {% elif client.gender == 'F' %}Женский
+        {% else %}—{% endif %}
+    </p>
+    <p><b>Телефон:</b> {{ client.phone or '—' }}</p>
+    <p><b>Email:</b> {{ client.email or '—' }}</p>
+    <p><b>Адрес:</b> {{ client.address or '—' }}</p>
+    <p><b>Статус:</b>
+        {% if client.status == 'alive' %}Жив
+        {% else %}Умер{% endif %}
+    </p>
+    {% if client.status == 'deceased' %}
+        <p><b>Дата смерти:</b> {{ client.death_date }}</p>
+    {% endif %}
+</div>
+
+<hr>
+
+<!-- Риск клиента -->
+<h3>Риск клиента</h3>
+<p>
+    Риск-скор (qx + страховая нагрузка):
+    <b>{{ risk_score }}</b>
+</p>
+<p style="font-size:0.9em;color:#666;">
+    Рассчитан на основе вероятности смерти qx из таблицы смертности
+    (возраст {{ client.age }}, пол {{ client.gender }})
+    плюс нагрузка по количеству договоров.
+</p>
+
+<hr>
+
+<!-- Договоры -->
+<h3>Договоры</h3>
+
+{% if client.policies %}
+<a href="{{ url_for('policy.add_policy', client_id=client.id) }}">
+    <button>+ Новый договор</button>
+</a><br><br>
+
+<table border="1" cellpadding="6">
+<tr>
+    <th>№ договора</th>
+    <th>Тип</th>
+    <th>Срок</th>
+    <th>Страховая сумма</th>
+    <th>Премия</th>
+    <th>Статус</th>
+    <th></th>
+</tr>
+{% for p in client.policies %}
+<tr>
+    <td><a href="{{ url_for('policy.policy_detail', id=p.id) }}">{{ p.contract_number }}</a></td>
+    <td>{{ p.insurance_type }}</td>
+    <td>{{ p.term_years }} лет</td>
+    <td>{{ "{:,.2f}".format(p.sum_insured or 0) }}</td>
+    <td>{{ "{:,.2f}".format(p.premium or 0) }}</td>
+    <td>{{ p.status }}</td>
+    <td><a href="{{ url_for('policy.policy_detail', id=p.id) }}">Открыть</a></td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>Нет договоров.</p>
+<a href="{{ url_for('policy.add_policy', client_id=client.id) }}">
+    <button>+ Создать первый договор</button>
+</a>
+{% endif %}
+
+<hr>
+
+<!-- Платежи -->
+<h3>Платежи</h3>
+
+{% if payments %}
+<table border="1" cellpadding="6">
+<tr>
+    <th>Дата</th>
+    <th>Сумма</th>
+    <th>Тип</th>
+    <th>Статус</th>
+</tr>
+{% for p in payments %}
+<tr>
+    <td>{{ p.payment_date }}</td>
+    <td>{{ "{:,.2f}".format(p.amount) }}</td>
+    <td>{{ p.payment_type }}</td>
+    <td>{{ p.status }}</td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>Нет платежей.</p>
+{% endif %}
+
+<hr>
+
+<!-- Выплаты -->
+<h3>Страховые выплаты</h3>
+
+{% if claims %}
+<table border="1" cellpadding="6">
+<tr>
+    <th>Дата</th>
+    <th>Заявленная сумма</th>
+    <th>Утверждённая сумма</th>
+    <th>Причина</th>
+</tr>
+{% for c in claims %}
+<tr>
+    <td>{{ c.claim_date or '—' }}</td>
+    <td>{{ "{:,.2f}".format(c.claim_amount or 0) }}</td>
+    <td>{{ "{:,.2f}".format(c.approved_amount or 0) }}</td>
+    <td>{{ c.reason }}</td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>Нет выплат.</p>
+{% endif %}
+
+<hr>
+
+<!-- История изменений -->
+<h3>История изменений</h3>
+
+{% if history %}
+<table border="1" cellpadding="6">
+<tr>
+    <th>Дата</th>
+    <th>Договор</th>
+    <th>Поле</th>
+    <th>Было</th>
+    <th>Стало</th>
+</tr>
+{% for h in history %}
+<tr>
+    <td>{{ h.change_date }}</td>
+    <td>{{ h.policy.contract_number }}</td>
+    <td>{{ h.field_name }}</td>
+    <td>{{ h.old_value }}</td>
+    <td>{{ h.new_value }}</td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>Нет истории изменений.</p>
+{% endif %}
+
+<hr>
+
+<!-- Действия -->
+<a href="{{ url_for('clients.edit_client', id=client.id) }}">
+    <button>Редактировать</button>
+</a>
+
+<!-- Удаление через POST-форму (защита от случайного удаления) -->
+<form method="POST" action="{{ url_for('clients.delete_client', id=client.id) }}"
+      style="display:inline;"
+      onsubmit="return confirm('Удалить клиента {{ client.full_name }}? Все его договоры тоже будут удалены.')">
+    <button type="submit" style="background:red;color:white;">Удалить клиента</button>
+</form>
+
+<a href="{{ url_for('clients.clients') }}"><button type="button">Назад</button></a>
+
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Клиенты{% endblock %}
+
+{% block content %}
+
+<h2>Клиенты</h2>
+
+<hr>
+
+<!-- Поиск и фильтры -->
+<form method="GET" action="{{ url_for('clients.clients') }}">
+
+    <input type="text" name="name" placeholder="ФИО"
+           value="{{ request.args.get('name', '') }}">
+
+    <input type="number" name="age" placeholder="Возраст" min="0" max="120"
+           value="{{ request.args.get('age', '') }}">
+
+    <select name="gender">
+        <option value="">Любой пол</option>
+        <option value="M" {% if request.args.get('gender') == 'M' %}selected{% endif %}>Мужской</option>
+        <option value="F" {% if request.args.get('gender') == 'F' %}selected{% endif %}>Женский</option>
+    </select>
+
+    <select name="status">
+        <option value="">Все статусы</option>
+        <option value="alive"    {% if request.args.get('status') == 'alive'    %}selected{% endif %}>Жив</option>
+        <option value="deceased" {% if request.args.get('status') == 'deceased' %}selected{% endif %}>Умер</option>
+    </select>
+
+    <button type="submit">Найти</button>
+    <a href="{{ url_for('clients.clients') }}"><button type="button">Сбросить</button></a>
+
+</form>
+
+<hr>
+
+<a href="{{ url_for('clients.add_client') }}">
+    <button>+ Добавить клиента</button>
+</a>
+
+<hr>
+
+<!-- Таблица клиентов -->
+{% if clients %}
+
+<table border="1" cellpadding="8" cellspacing="0">
+    <tr>
+        <th>ID</th>
+        <th>ФИО</th>
+        <th>Дата рождения</th>
+        <th>Возраст</th>
+        <th>Пол</th>
+        <th>Статус</th>
+        <th>Договоров</th>
+        <th>Страховая нагрузка</th>
+        <th>Действие</th>
+    </tr>
+
+    {% for client in clients %}
+    <tr>
+        <td>{{ client.id }}</td>
+
+        <td>
+            <a href="{{ url_for('clients.client_detail', id=client.id) }}">
+                {{ client.full_name }}
+            </a>
+        </td>
+
+        <td>{{ client.birth_date }}</td>
+        <td>{{ client.age }}</td>
+
+        <td>
+            {% if client.gender == 'M' %}Мужской
+            {% elif client.gender == 'F' %}Женский
+            {% else %}—{% endif %}
+        </td>
+
+        <td>
+            {% if client.status == 'alive' %}Жив
+            {% else %}Умер{% endif %}
+        </td>
+
+        <td>{{ client.policies | length }}</td>
+
+        <td>
+            {% if client.total_sum_insured is not none %}
+                {{ "{:,.2f}".format(client.total_sum_insured) }}
+            {% else %}
+                0.00
+            {% endif %}
+        </td>
+
+        <td>
+            <a href="{{ url_for('clients.client_detail', id=client.id) }}">Открыть</a>
+        </td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+<p>Всего: {{ clients | length }}</p>
+
+{% else %}
+<p>Клиенты не найдены.</p>
+{% endif %}
+
+{% endblock %}
