@@ -70,7 +70,12 @@
     <td>{{ p.term_years }} лет</td>
     <td>{{ "{:,.2f}".format(p.sum_insured or 0) }}</td>
     <td>{{ "{:,.2f}".format(p.premium or 0) }}</td>
-    <td>{{ p.status }}</td>
+    <td>
+        {% if p.status == 'active' %}Активен
+        {% elif p.status == 'closed' %}Закрыт
+        {% elif p.status == 'expired' %}Истёк
+        {% else %}{{ p.status }}{% endif %}
+    </td>
     <td><a href="{{ url_for('policy.policy_detail', id=p.id) }}">Открыть</a></td>
 </tr>
 {% endfor %}
@@ -99,8 +104,18 @@
 <tr>
     <td>{{ p.payment_date }}</td>
     <td>{{ "{:,.2f}".format(p.amount) }}</td>
-    <td>{{ p.payment_type }}</td>
-    <td>{{ p.status }}</td>
+    <td>
+        {% if p.payment_type == 'premium' %}Страховой взнос
+        {% elif p.payment_type == 'penalty' %}Штраф
+        {% elif p.payment_type == 'partial_withdrawal' %}Частичное снятие
+        {% else %}{{ p.payment_type }}{% endif %}
+    </td>
+    <td>
+        {% if p.status == 'confirmed' %}Подтверждён
+        {% elif p.status == 'pending' %}Ожидает
+        {% elif p.status == 'overdue' %}Просрочен
+        {% else %}{{ p.status }}{% endif %}
+    </td>
 </tr>
 {% endfor %}
 </table>
@@ -126,7 +141,12 @@
     <td>{{ c.claim_date or '—' }}</td>
     <td>{{ "{:,.2f}".format(c.claim_amount or 0) }}</td>
     <td>{{ "{:,.2f}".format(c.approved_amount or 0) }}</td>
-    <td>{{ c.reason }}</td>
+    <td>
+        {% if c.reason == 'death' %}Смерть
+        {% elif c.reason == 'maturity' %}Дожитие
+        {% elif c.reason == 'surrender' %}Расторжение
+        {% else %}{{ c.reason }}{% endif %}
+    </td>
 </tr>
 {% endfor %}
 </table>
@@ -152,7 +172,24 @@
 <tr>
     <td>{{ h.change_date }}</td>
     <td>{{ h.policy.contract_number }}</td>
-    <td>{{ h.field_name }}</td>
+    <td>
+    {% if h.field_name == 'client_id' %}Клиент
+    {% elif h.field_name == 'contract_number' %}Номер договора
+    {% elif h.field_name == 'issue_date' %}Дата заключения
+    {% elif h.field_name == 'insurance_type' %}Тип страхования
+    {% elif h.field_name == 'term_years' %}Срок договора
+    {% elif h.field_name == 'premium' %}Страховой взнос
+    {% elif h.field_name == 'premium_frequency' %}Периодичность взносов
+    {% elif h.field_name == 'interest_rate' %}Ставка доходности
+    {% elif h.field_name == 'sum_insured' %}Страховая сумма
+    {% elif h.field_name == 'beneficiary_name' %}Выгодоприобретатель
+    {% elif h.field_name == 'beneficiary_relation' %}Родство
+    {% elif h.field_name == 'beneficiary_phone' %}Телефон выгодоприобретателя
+    {% elif h.field_name == 'beneficiary_email' %}Email выгодоприобретателя
+    {% elif h.field_name == 'status' %}Статус договора
+    {% else %}{{ h.field_name }}
+    {% endif %}
+</td>
     <td>{{ h.old_value }}</td>
     <td>{{ h.new_value }}</td>
 </tr>

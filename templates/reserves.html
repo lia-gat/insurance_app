@@ -152,7 +152,15 @@ new Chart(document.getElementById('dynChart'), {
             {{ row.policy.client.full_name }}
         </a>
     </td>
-    <td>{{ row.policy.insurance_type }}</td>
+    <td>
+        {% if row.policy.insurance_type == 'life' %}Страхование жизни
+        {% elif row.policy.insurance_type == 'endowment' %}Накопительное страхование
+        {% elif row.policy.insurance_type == 'term' %}Срочное страхование
+        {% elif row.policy.insurance_type == 'annuity' %}Аннуитет
+        {% elif row.policy.insurance_type == 'mixed' %}Смешанное страхование
+        {% else %}{{ row.policy.insurance_type }}
+        {% endif %}
+    </td>
     <td>{{ "{:,.2f}".format(row.policy.sum_insured or 0) }}</td>
     <td>
         {% if row.reserve > 0 %}

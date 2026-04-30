@@ -522,6 +522,7 @@ def payments():
         'payments.html',
         payments=all_payments,
         total_amount=round(total_amount, 2),
+        today=date.today(),
     )
 
 
@@ -648,9 +649,9 @@ def scenario_analysis():
     return render_template('scenario_analysis.html', results=results)
 
 
-# ===========================================================================
+
 # 12. РЕЗЕРВЫ
-# ===========================================================================
+
 @main.route('/reserves', methods=['GET'])
 def reserves():
     policy_id = request.args.get('policy_id')

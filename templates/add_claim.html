@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавить выплату — {{ policy.contract_number }}{% endblock %}
+
+{% block content %}
+
+<h2>Добавление страховой выплаты</h2>
+
+<hr>
+
+<!-- Контекст договора -->
+<div class="info-block">
+    <p><b>Договор:</b>
+        <a href="{{ url_for('policy.policy_detail', id=policy.id) }}">{{ policy.contract_number }}</a>
+    </p>
+    <p><b>Клиент:</b>
+        <a href="{{ url_for('clients.client_detail', id=policy.client_id) }}">{{ policy.client.full_name }}</a>
+        — {{ policy.client.age }} лет, статус:
+        {% if policy.client.status == 'alive' %}Жив{% else %}<b style="color:red;">Умер</b>{% endif %}
+    </p>
+    <p><b>Тип страхования:</b> {{ policy.insurance_type }}</p>
+    <p><b>Страховая сумма:</b> <b>{{ "{:,.2f}".format(policy.sum_insured or 0) }} руб.</b></p>
+    <p><b>Статус договора:</b>
+        {% if policy.status == 'active' %}🟢 Активный
+        {% elif policy.status == 'closed' %}⚪ Закрыт
+        {% else %}🔴 Истёк{% endif %}
+    </p>
+</div>
+
+{% set total_approved = namespace(val=0) %}
+{% for c in policy.claims %}{% set total_approved.val = total_approved.val + (c.approved_amount or 0) %}{% endfor %}
+
+{% if total_approved.val > 0 %}
+<p style="background:#fef2f2;border-left:4px solid #ef4444;padding:10px 14px;border-radius:6px;font-size:0.9em;">
+    ⚠️ По этому договору уже произведено выплат на сумму
+    <b>{{ "{:,.2f}".format(total_approved.val) }} руб.</b>
+    Остаток страховой суммы:
+    <b>{{ "{:,.2f}".format([((policy.sum_insured or 0) - total_approved.val), 0] | max) }} руб.</b>
+</p>
+{% endif %}
+
+<hr>
+
+<form method="POST" action="{{ url_for('claim.add_claim', policy_id=policy.id) }}">
+
+    <label>Дата страхового случая: <span style="color:red">*</span></label><br>
+    <input type="date" name="claim_date" id="claim_date" required><br><br>
+
+    <label>Причина выплаты: <span style="color:red">*</span></label><br>
+    <select name="reason" id="reason_select" onchange="onReasonChange()" required>
+        <option value="">— выберите причину —</option>
+        <option value="death">💀 Смерть застрахованного</option>
+        <option value="maturity">🎯 Дожитие до конца срока</option>
+        <option value="surrender">📤 Досрочное расторжение договора</option>
+    </select><br><br>
+
+    <!-- Подсказки по причине -->
+    <div id="hint_death" style="display:none;background:#fef2f2;border-left:4px solid #ef4444;
+         padding:10px 14px;border-radius:6px;margin-bottom:14px;font-size:0.87em;color:#991b1b;">
+        💀 <b>Смерть:</b> выплата производится выгодоприобретателю в размере страховой суммы.
+        {% if policy.beneficiary_name %}
+            Выгодоприобретатель: <b>{{ policy.beneficiary_name }}</b>
+            ({{ policy.beneficiary_relation or '—' }}).
+        {% else %}
+            Выгодоприобретатель по договору не указан — уточните данные.
+        {% endif %}
+    </div>
+    <div id="hint_maturity" style="display:none;background:#f0fdf4;border-left:4px solid #22c55e;
+         padding:10px 14px;border-radius:6px;margin-bottom:14px;font-size:0.87em;color:#166534;">
+        🎯 <b>Дожитие:</b> выплачивается полная страховая сумма
+        <b>{{ "{:,.2f}".format(policy.sum_insured or 0) }} руб.</b>
+        Убедитесь, что срок договора действительно истёк.
+    </div>
+    <div id="hint_surrender" style="display:none;background:#fff7ed;border-left:4px solid #f59e0b;
+         padding:10px 14px;border-radius:6px;margin-bottom:14px;font-size:0.87em;color:#92400e;">
+        📤 <b>Досрочное расторжение:</b> выплачивается выкупная сумма — как правило, меньше страховой.
+        Размер определяется условиями договора и временем до окончания срока.
+    </div>
+
+    <label>Заявленная сумма (руб.): <span style="color:red">*</span></label><br>
+    <input type="number" name="claim_amount" id="claim_amount" step="0.01" min="0.01"
+           placeholder="{{ policy.sum_insured }}" required><br>
+    <small style="color:#64748b;">Страховая сумма по договору: {{ "{:,.2f}".format(policy.sum_insured or 0) }} руб.</small><br><br>
+
+    <label>Утверждённая сумма к выплате (руб.):</label><br>
+    <input type="number" name="approved_amount" id="approved_amount" step="0.01" min="0"
+           placeholder="0.00"><br>
+    <small style="color:#64748b;">Оставьте 0 если решение ещё не принято</small><br><br>
+
+    <hr>
+
+    <button type="submit">💾 Зарегистрировать выплату</button>
+
+</form>
+
+<hr>
+
+<!-- История выплат по договору -->
+{% if policy.claims %}
+<h3>Ранее зарегистрированные выплаты</h3>
+<table border="1" cellpadding="6">
+<tr>
+    <th>Дата</th>
+    <th>Заявлено</th>
+    <th>Утверждено</th>
+    <th>Причина</th>
+</tr>
+{% for c in policy.claims | sort(attribute='claim_date', reverse=True) %}
+<tr>
+    <td>{{ c.claim_date or '—' }}</td>
+    <td>{{ "{:,.2f}".format(c.claim_amount or 0) }}</td>
+    <td>{{ "{:,.2f}".format(c.approved_amount or 0) }}</td>
+    <td>
+        {% if c.reason == 'death' %}💀 Смерть
+        {% elif c.reason == 'maturity' %}🎯 Дожитие
+        {% elif c.reason == 'surrender' %}📤 Расторжение
+        {% else %}{{ c.reason }}{% endif %}
+    </td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p style="color:#94a3b8;">Выплат по этому договору ещё не было.</p>
+{% endif %}
+
+<hr>
+<a href="{{ url_for('policy.policy_detail', id=policy.id) }}">
+    <button type="button">Отмена</button>
+</a>
+
+<script>
+// Сегодняшняя дата по умолчанию
+document.getElementById('claim_date').value = new Date().toISOString().split('T')[0];
+
+// При смерти или дожитии подставляем страховую сумму
+const sumInsured = {{ policy.sum_insured or 0 }};
+
+function onReasonChange() {
+    const r = document.getElementById('reason_select').value;
+    document.getElementById('hint_death').style.display     = r === 'death'     ? 'block' : 'none';
+    document.getElementById('hint_maturity').style.display  = r === 'maturity'  ? 'block' : 'none';
+    document.getElementById('hint_surrender').style.display = r === 'surrender' ? 'block' : 'none';
+
+    // Автозаполнение суммы
+    const claimInput    = document.getElementById('claim_amount');
+    const approvedInput = document.getElementById('approved_amount');
+
+    if (r === 'death' || r === 'maturity') {
+        claimInput.value    = sumInsured.toFixed(2);
+        approvedInput.value = sumInsured.toFixed(2);
+    } else if (r === 'surrender') {
+        claimInput.value    = '';
+        approvedInput.value = '';
+    }
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавить платёж — {{ policy.contract_number }}{% endblock %}
+
+{% block content %}
+
+<h2>Добавление платежа</h2>
+
+<hr>
+
+<!-- Контекст договора -->
+<div class="info-block">
+    <p><b>Договор:</b>
+        <a href="{{ url_for('policy.policy_detail', id=policy.id) }}">{{ policy.contract_number }}</a>
+    </p>
+    <p><b>Клиент:</b>
+        <a href="{{ url_for('clients.client_detail', id=policy.client_id) }}">{{ policy.client.full_name }}</a>
+    </p>
+    <p><b>Тип страхования:</b> {{ policy.insurance_type }}</p>
+    <p><b>Периодичность:</b>
+        {% if policy.premium_frequency == 'monthly' %}Ежемесячно{% else %}Ежегодно{% endif %}
+    </p>
+    <p><b>Стандартный взнос:</b> <b>{{ "{:,.2f}".format(policy.premium or 0) }} руб.</b></p>
+    <p><b>Статус договора:</b>
+        {% if policy.status == 'active' %}🟢 Активный
+        {% elif policy.status == 'closed' %}⚪ Закрыт
+        {% else %}🔴 Истёк{% endif %}
+    </p>
+</div>
+
+<hr>
+
+<!-- Прогресс оплаты -->
+{% set total_paid = namespace(val=0) %}
+{% for p in policy.payments %}{% set total_paid.val = total_paid.val + p.amount %}{% endfor %}
+{% set total_plan = (policy.premium or 0) * (policy.term_years or 1) %}
+
+<p>
+    Оплачено: <b>{{ "{:,.2f}".format(total_paid.val) }} руб.</b>
+    из <b>{{ "{:,.2f}".format(total_plan) }} руб.</b>
+    планового объёма взносов
+</p>
+
+{% if total_plan > 0 %}
+{% set pct = (total_paid.val / total_plan * 100) %}
+{% set pct_display = pct if pct <= 100 else 100 %}
+<div style="background:#e2e8f0;border-radius:6px;height:12px;margin-bottom:6px;overflow:hidden;">
+    <div style="width:{{ pct_display | round(1) }}%;background:#2563eb;height:12px;border-radius:6px;"></div>
+</div>
+<p style="font-size:0.83em;color:#64748b;margin-bottom:16px;">{{ pct | round(1) }}% от плана</p>
+{% endif %}
+
+<hr>
+
+<form method="POST" action="{{ url_for('payment.add_payment', policy_id=policy.id) }}">
+
+    <label>Сумма платежа (руб.): <span style="color:red">*</span></label><br>
+    <input type="number" name="amount" step="0.01" min="0.01"
+           value="{{ policy.premium or '' }}" required><br>
+    <small style="color:#64748b;">Стандартный взнос {{ "{:,.2f}".format(policy.premium or 0) }} руб. подставлен автоматически</small><br><br>
+
+    <label>Дата платежа: <span style="color:red">*</span></label><br>
+    <input type="date" name="payment_date" id="payment_date" required><br><br>
+
+    <label>Тип платежа:</label><br>
+    <select name="payment_type" onchange="
+        document.getElementById('hint_withdrawal').style.display =
+            this.value === 'partial_withdrawal' ? 'block' : 'none'
+    ">
+        <option value="premium">💳 Страховой взнос</option>
+        <option value="penalty">⚠️ Штраф / пеня</option>
+        <option value="partial_withdrawal">💰 Частичное изъятие накоплений</option>
+    </select><br><br>
+
+    <div id="hint_withdrawal" style="display:none;background:#fff7ed;border-left:4px solid #f59e0b;
+         padding:10px 14px;border-radius:6px;margin-bottom:14px;font-size:0.87em;color:#92400e;">
+        ⚠️ Частичное изъятие уменьшает накопленный резерв по договору.
+        Убедитесь, что сумма не превышает текущий резерв.
+    </div>
+
+    <label>Статус:</label><br>
+    <select name="status">
+        <option value="confirmed">✅ Подтверждён</option>
+        <option value="pending">⏳ Ожидает подтверждения</option>
+        <option value="overdue">🔴 Просрочен</option>
+    </select><br><br>
+
+    <hr>
+    <button type="submit">💾 Добавить платёж</button>
+
+</form>
+
+<hr>
+
+<!-- Последние платежи -->
+{% if policy.payments %}
+<h3>Последние платежи по договору</h3>
+<table border="1" cellpadding="6">
+<tr>
+    <th>Дата</th>
+    <th>Сумма</th>
+    <th>Тип</th>
+    <th>Статус</th>
+</tr>
+{% set shown = namespace(n=0) %}
+{% for pay in policy.payments | sort(attribute='payment_date', reverse=True) %}
+{% if shown.n < 5 %}
+<tr {% if pay.status == 'overdue' %}style="background:#fff7ed;"{% endif %}>
+    <td>{{ pay.payment_date }}</td>
+    <td>{{ "{:,.2f}".format(pay.amount) }}</td>
+    <td>{{ pay.payment_type }}</td>
+    <td>
+        {% if pay.status == 'confirmed' %}✅ Подтверждён
+        {% elif pay.status == 'pending' %}⏳ Ожидает
+        {% else %}🔴 Просрочен{% endif %}
+    </td>
+</tr>
+{% set shown.n = shown.n + 1 %}
+{% endif %}
+{% endfor %}
+</table>
+{% if policy.payments | length > 5 %}
+<p style="font-size:0.85em;color:#64748b;">
+    Показаны последние 5 из {{ policy.payments | length }}.
+    <a href="{{ url_for('policy.policy_detail', id=policy.id) }}">Смотреть все →</a>
+</p>
+{% endif %}
+{% else %}
+<p style="color:#94a3b8;">По этому договору платежей ещё нет.</p>
+{% endif %}
+
+<hr>
+<a href="{{ url_for('policy.policy_detail', id=policy.id) }}">
+    <button type="button">Отмена</button>
+</a>
+
+<script>
+document.getElementById('payment_date').value = new Date().toISOString().split('T')[0];
+</script>
+
+{% endblock %}

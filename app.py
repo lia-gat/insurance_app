@@ -13,7 +13,7 @@ app.py — Точка входа Flask-приложения.
 import os
 from flask import Flask
 from models import db
-
+from seed import seed_data
 
 def create_app() -> Flask:
     """Фабрика приложения."""
@@ -52,7 +52,7 @@ def create_app() -> Flask:
     with app.app_context():
         db.create_all()
         _seed_mortality_table(app)
-
+        seed_data()
     return app
 
 
@@ -98,3 +98,4 @@ if __name__ == '__main__':
     application = create_app()
     debug_mode  = os.environ.get('FLASK_DEBUG', '1') == '1'
     application.run(debug=debug_mode, host='0.0.0.0', port=5000)
+    
