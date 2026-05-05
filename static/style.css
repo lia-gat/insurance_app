@@ -1,8 +1,3 @@
-/* ============================================================
-   style.css — Система долгосрочного страхования жизни
-   ============================================================ */
-
-/* ── Сброс и базовые настройки ─────────────────────────────── */
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -22,7 +17,6 @@ body {
     min-height: 100vh;
 }
 
-/* ── Шапка ──────────────────────────────────────────────────── */
 header {
     background: #1e3a5f;
     color: #ffffff;
@@ -36,7 +30,6 @@ header h1 {
     letter-spacing: 0.02em;
 }
 
-/* ── Навигация ──────────────────────────────────────────────── */
 nav {
     background: #1a3050;
     padding: 0 32px;
@@ -66,14 +59,12 @@ nav a.active {
     font-weight: 600;
 }
 
-/* ── Контейнер ──────────────────────────────────────────────── */
 .container {
     max-width: 1200px;
     margin: 28px auto;
     padding: 0 24px;
 }
 
-/* ── Заголовки ──────────────────────────────────────────────── */
 h2 {
     font-size: 1.5rem;
     font-weight: 700;
@@ -105,7 +96,6 @@ p {
     margin-bottom: 8px;
 }
 
-/* ── Flash-сообщения ────────────────────────────────────────── */
 .flash {
     padding: 12px 18px;
     border-radius: 6px;
@@ -138,7 +128,6 @@ p {
     border-left: 4px solid #eab308;
 }
 
-/* ── Карточки статистики (главная) ──────────────────────────── */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -176,7 +165,6 @@ p {
     color: #1e3a5f;
 }
 
-/* ── Сетка графиков ─────────────────────────────────────────── */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
@@ -197,7 +185,6 @@ p {
     color: #475569;
 }
 
-/* ── Таблицы ────────────────────────────────────────────────── */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -240,12 +227,10 @@ table tr.overdue td {
     background: #fff7ed;
 }
 
-/* Убираем устаревший атрибут border у таблиц */
 table[border] {
     border: none;
 }
 
-/* ── Ссылки ─────────────────────────────────────────────────── */
 a {
     color: #2563eb;
     text-decoration: none;
@@ -256,7 +241,6 @@ a:hover {
     color: #1d4ed8;
 }
 
-/* ── Кнопки ─────────────────────────────────────────────────── */
 button,
 input[type="submit"] {
     display: inline-block;
@@ -282,7 +266,6 @@ button:active {
     transform: translateY(0);
 }
 
-/* Вторичная кнопка (Назад, Отмена) */
 button[type="button"] {
     background: #e2e8f0;
     color: #334155;
@@ -297,14 +280,15 @@ button[style*="red"],
 .btn-danger {
     background: #ef4444 !important;
     color: #ffffff !important;
+    
 }
 
 button[style*="red"]:hover,
 .btn-danger:hover {
     background: #dc2626 !important;
+    
 }
 
-/* ── Формы ──────────────────────────────────────────────────── */
 form {
     background: #ffffff;
     padding: 24px 28px;
@@ -354,7 +338,6 @@ input[readonly] {
     cursor: default;
 }
 
-/* Форма поиска/фильтров — компактная горизонтальная */
 form.search-form,
 form[method="GET"] {
     display: flex;
@@ -378,7 +361,6 @@ form[method="GET"] button {
     flex-shrink: 0;
 }
 
-/* ── Блоки информации ───────────────────────────────────────── */
 .info-block {
     background: #ffffff;
     border-radius: 10px;
@@ -406,7 +388,6 @@ form[method="GET"] button {
     flex-shrink: 0;
 }
 
-/* ── Таблица результатов расчёта ────────────────────────────── */
 table.results-table th {
     background: #334155;
 }
@@ -426,7 +407,6 @@ table.results-table tr.highlight-orange td {
     font-weight: 600;
 }
 
-/* ── Бейджи статусов ────────────────────────────────────────── */
 .badge {
     display: inline-block;
     padding: 2px 10px;
@@ -442,12 +422,10 @@ table.results-table tr.highlight-orange td {
 .badge-alive   { background: #dcfce7; color: #166534; }
 .badge-deceased{ background: #f1f5f9; color: #475569; }
 
-/* ── Сценарный анализ — цвета ───────────────────────────────── */
 .scenario-base     { color: #1d4ed8; font-weight: 700; }
 .scenario-pessimist{ color: #b91c1c; font-weight: 700; }
 .scenario-optimist { color: #15803d; font-weight: 700; }
 
-/* ── Адаптивность ───────────────────────────────────────────── */
 @media (max-width: 768px) {
     header { padding: 14px 16px; }
     nav    { padding: 0 12px; }
@@ -473,4 +451,11 @@ table.results-table tr.highlight-orange td {
     .stat-value { font-size: 1.4rem; }
 
     h2 { font-size: 1.25rem; }
+}
+
+form[style*="display:inline"] {
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
 }

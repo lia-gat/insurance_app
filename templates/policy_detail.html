@@ -8,7 +8,6 @@
 
 <hr>
 
-<!-- Основная информация -->
 <h3>Информация</h3>
 
 <p><b>Клиент:</b>
@@ -23,9 +22,7 @@
 <p><b>Страховая сумма:</b> {{ "{:,.2f}".format(policy.sum_insured or 0) }}</p>
 <p><b>Процентная ставка:</b> {{ policy.interest_rate or 0 }}%</p>
 <p><b>Статус:</b>
-    {% if policy.status == 'active' %}🟢 Активный
-    {% elif policy.status == 'closed' %}⚪ Закрыт
-    {% else %}🔴 Истёк{% endif %}
+    {{ policy.status | tr }}
 </p>
 
 {% if policy.beneficiary_name %}
@@ -51,7 +48,6 @@
 
 <hr>
 
-<!-- График динамики резерва -->
 <h3>Динамика договора</h3>
 
 <canvas id="resChart" height="100"></canvas>
@@ -75,7 +71,6 @@ new Chart(document.getElementById('resChart'), {
 
 <hr>
 
-<!-- Платёжное расписание -->
 {% if schedule %}
 <h3>Платёжное расписание</h3>
 <table border="1" cellpadding="6">
@@ -90,7 +85,6 @@ new Chart(document.getElementById('resChart'), {
 <hr>
 {% endif %}
 
-<!-- Платежи -->
 <h3>Платежи</h3>
 
 <a href="{{ url_for('payment.add_payment', policy_id=policy.id) }}">
@@ -109,8 +103,8 @@ new Chart(document.getElementById('resChart'), {
 <tr>
     <td>{{ p.payment_date }}</td>
     <td>{{ "{:,.2f}".format(p.amount) }}</td>
-    <td>{{ p.payment_type }}</td>
-    <td>{{ p.status }}</td>
+    <td>{{ p.payment_type | tr }}</td>
+    <td>{{ p.status | tr }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -120,7 +114,6 @@ new Chart(document.getElementById('resChart'), {
 
 <hr>
 
-<!-- Выплаты -->
 <h3>Страховые выплаты</h3>
 
 <a href="{{ url_for('claim.add_claim', policy_id=policy.id) }}">
@@ -140,7 +133,7 @@ new Chart(document.getElementById('resChart'), {
     <td>{{ c.claim_date or '—' }}</td>
     <td>{{ "{:,.2f}".format(c.claim_amount or 0) }}</td>
     <td>{{ "{:,.2f}".format(c.approved_amount or 0) }}</td>
-    <td>{{ c.reason }}</td>
+    <td>{{ c.reason | tr }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -150,7 +143,6 @@ new Chart(document.getElementById('resChart'), {
 
 <hr>
 
-<!-- История изменений -->
 <h3>История изменений</h3>
 
 {% if history %}
@@ -164,9 +156,9 @@ new Chart(document.getElementById('resChart'), {
 {% for h in history %}
 <tr>
     <td>{{ h.change_date }}</td>
-    <td>{{ h.field_name }}</td>
-    <td>{{ h.old_value }}</td>
-    <td>{{ h.new_value }}</td>
+    <td>{{ h.field_name  | tr  }}</td>
+    <td>{{ h.old_value  | tr  }}</td>
+    <td>{{ h.new_value  | tr  }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -176,7 +168,6 @@ new Chart(document.getElementById('resChart'), {
 
 <hr>
 
-<!-- Действия -->
 <a href="{{ url_for('policy.edit_policy', id=policy.id) }}">
     <button>Редактировать</button>
 </a>

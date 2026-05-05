@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models import db, Client, Policy, Payment, Claim, PolicyHistory, MortalityRate, MortalityTable, Reserve
 from datetime import datetime, date
 import math
+import csv
+import io
 
 main       = Blueprint('main',    __name__)
 client_bp  = Blueprint('clients', __name__)
@@ -10,9 +12,7 @@ payment_bp = Blueprint('payment', __name__)
 claim_bp   = Blueprint('claim',   __name__)
 
 
-# ---------------------------------------------------------------------------
 # Вспомогательная функция: парсинг даты из формы
-# ---------------------------------------------------------------------------
 def parse_date(value):
     """Преобразует строку 'YYYY-MM-DD' в объект date. Возвращает None если пусто."""
     if not value:
@@ -20,9 +20,7 @@ def parse_date(value):
     return datetime.strptime(value, '%Y-%m-%d').date()
 
 
-# ---------------------------------------------------------------------------
 # Вспомогательная функция: получение qx из таблицы смертности
-# ---------------------------------------------------------------------------
 def get_mortality_rate(age, gender):
     """Возвращает qx из последней загруженной таблицы смертности для заданного возраста и пола."""
     table = MortalityTable.query.filter_by(gender=gender).order_by(MortalityTable.year.desc()).first()
@@ -30,16 +28,12 @@ def get_mortality_rate(age, gender):
         rate = MortalityRate.query.filter_by(table_id=table.id, age=age).first()
         if rate:
             return rate.qx
-    # fallback: упрощённая линейная аппроксимация
     return max(0.001, age * 0.0005)
 
 
-# ===========================================================================
 # 1. ГЛАВНАЯ СТРАНИЦА
-# ===========================================================================
 @main.route('/')
 def index():
-    # --- сводные показатели портфеля ---
     total_clients   = Client.query.count()
     total_policies  = Policy.query.count()
     active_policies = Policy.query.filter_by(status='active').count()
@@ -48,23 +42,18 @@ def index():
     all_policies = Policy.query.all()
     all_claims   = Claim.query.all()
 
-    # Просроченные платежи: payments с датой в прошлом и статусом не confirmed
     overdue_payments = Payment.query.filter(
         Payment.payment_date < date.today(),
         Payment.status != 'confirmed'
     ).count()
 
-    # Общая страховая сумма портфеля
     total_portfolio = sum(p.sum_insured or 0 for p in all_policies)
 
-    # Ожидаемая прибыль: все взносы минус все выплаты
     total_premiums = sum(p.amount for p in all_payments if p.payment_type == 'premium')
     total_paid_out = sum(c.approved_amount or 0 for c in all_claims)
     expected_profit = total_premiums - total_paid_out
 
-    # --- аналитика для графиков (передаём в шаблон как JSON-ready списки) ---
 
-    # Возрастное распределение клиентов (бакеты по 10 лет)
     clients_all = Client.query.all()
     age_buckets = {}
     for c in clients_all:
@@ -74,12 +63,10 @@ def index():
     age_labels  = sorted(age_buckets.keys())
     age_values  = [age_buckets[l] for l in age_labels]
 
-    # Динамика резерва: суммируем Reserve.reserve_amount по дате
     reserves = Reserve.query.order_by(Reserve.date).all()
     reserve_dates  = [str(r.date)           for r in reserves]
     reserve_values = [float(r.reserve_amount) for r in reserves]
 
-    # График платёжного расписания: суммы платежей по месяцам
     payment_by_month = {}
     for p in all_payments:
         key = p.payment_date.strftime('%Y-%m')
@@ -87,7 +74,6 @@ def index():
     pay_labels = sorted(payment_by_month.keys())[-12:]   # последние 12 месяцев
     pay_values = [round(payment_by_month[k], 2) for k in pay_labels]
 
-    # qx из таблицы (пример: мужчины, возраст 30-70)
     mort_ages   = list(range(30, 75, 5))
     mort_male   = [round(get_mortality_rate(a, 'M') * 1000, 3) for a in mort_ages]   # ‰
     mort_female = [round(get_mortality_rate(a, 'F') * 1000, 3) for a in mort_ages]
@@ -112,9 +98,7 @@ def index():
     )
 
 
-# ===========================================================================
 # 2. СПИСОК КЛИЕНТОВ
-# ===========================================================================
 @client_bp.route('/clients', methods=['GET'])
 def clients():
     name   = request.args.get('name',   '').strip()
@@ -144,9 +128,7 @@ def clients():
     return render_template('clients.html', clients=all_clients)
 
 
-# ===========================================================================
 # 3. СТРАНИЦА КЛИЕНТА
-# ===========================================================================
 @client_bp.route('/client/<int:id>')
 def client_detail(id):
     client = Client.query.get_or_404(id)
@@ -157,17 +139,14 @@ def client_detail(id):
         payments.extend(p.payments)
         claims.extend(p.claims)
 
-    # Сортируем по дате (новые сверху)
     payments.sort(key=lambda x: x.payment_date, reverse=True)
     claims.sort(key=lambda x: x.claim_date or date.min, reverse=True)
 
-    # История изменений клиента берётся из PolicyHistory всех его договоров
     history = []
     for p in client.policies:
         history.extend(p.history)
     history.sort(key=lambda x: x.change_date or date.min, reverse=True)
 
-    # Риск-скор: используем qx из таблицы смертности + нагрузка по договорам
     qx         = get_mortality_rate(client.age, client.gender or 'M')
     policy_load = len(client.policies) * 0.05
     risk_score  = round(qx + policy_load, 4)
@@ -182,9 +161,7 @@ def client_detail(id):
     )
 
 
-# ===========================================================================
 # СОЗДАНИЕ КЛИЕНТА
-# ===========================================================================
 @client_bp.route('/add_client', methods=['GET', 'POST'])
 def add_client():
     if request.method == 'POST':
@@ -208,9 +185,7 @@ def add_client():
     return render_template('add_client.html')
 
 
-# ===========================================================================
 # РЕДАКТИРОВАНИЕ КЛИЕНТА
-# ===========================================================================
 @client_bp.route('/edit_client/<int:id>', methods=['GET', 'POST'])
 def edit_client(id):
     client = Client.query.get_or_404(id)
@@ -236,9 +211,7 @@ def edit_client(id):
     return render_template('edit_client.html', client=client)
 
 
-# ===========================================================================
 # УДАЛЕНИЕ КЛИЕНТА (POST — защита от случайного удаления)
-# ===========================================================================
 @client_bp.route('/delete_client/<int:id>', methods=['POST'])
 def delete_client(id):
     client = Client.query.get_or_404(id)
@@ -248,9 +221,7 @@ def delete_client(id):
     return redirect(url_for('clients.clients'))
 
 
-# ===========================================================================
 # 4. СПИСОК ДОГОВОРОВ
-# ===========================================================================
 @policy_bp.route('/policies')
 def policies():
     contract_number = request.args.get('contract_number', '').strip()
@@ -274,9 +245,7 @@ def policies():
     return render_template('policies.html', policies=all_policies)
 
 
-# ===========================================================================
 # 5. СТРАНИЦА ДОГОВОРА
-# ===========================================================================
 @policy_bp.route('/policy/<int:id>')
 def policy_detail(id):
     policy  = Policy.query.get_or_404(id)
@@ -287,10 +256,8 @@ def policy_detail(id):
     total_paid   = sum(p.amount           for p in payments)
     total_claims = sum(c.approved_amount or 0 for c in claims)
 
-    # Резерв = страховая сумма - оплаченные взносы + выплаты
     reserve = max((policy.sum_insured or 0) - total_paid + total_claims, 0)
 
-    # График платёжного расписания (ожидаемые взносы на весь срок)
     schedule = []
     if policy.issue_date and policy.term_years and policy.premium:
         freq = 12 if policy.premium_frequency == 'monthly' else 1
@@ -304,7 +271,6 @@ def policy_detail(id):
                     'amount': float(policy.premium),
                 })
 
-    # Данные для графика накопления резерва по договору
     reserve_rows = Reserve.query.filter_by(policy_id=id).order_by(Reserve.date).all()
     res_dates  = [str(r.date)            for r in reserve_rows]
     res_values = [float(r.reserve_amount) for r in reserve_rows]
@@ -324,9 +290,7 @@ def policy_detail(id):
     )
 
 
-# ===========================================================================
 # СОЗДАНИЕ ДОГОВОРА
-# ===========================================================================
 @policy_bp.route('/add_policy', methods=['GET', 'POST'])
 @policy_bp.route('/add_policy/<int:client_id>', methods=['GET', 'POST'])
 def add_policy(client_id=None):
@@ -360,15 +324,12 @@ def add_policy(client_id=None):
     return render_template('add_policy.html', clients=clients, preselected_client=preselected_client)
 
 
-# ===========================================================================
 # РЕДАКТИРОВАНИЕ ДОГОВОРА
-# ===========================================================================
 @policy_bp.route('/edit_policy/<int:id>', methods=['GET', 'POST'])
 def edit_policy(id):
     policy = Policy.query.get_or_404(id)
 
     if request.method == 'POST':
-        # Записываем историю изменений для каждого изменённого поля
         fields_to_track = ['insurance_type', 'term_years', 'premium', 'sum_insured',
                            'status', 'interest_rate', 'premium_frequency']
         for field in fields_to_track:
@@ -404,9 +365,7 @@ def edit_policy(id):
     return render_template('edit_policy.html', policy=policy)
 
 
-# ===========================================================================
 # УДАЛЕНИЕ ДОГОВОРА (POST)
-# ===========================================================================
 @policy_bp.route('/delete_policy/<int:id>', methods=['POST'])
 def delete_policy(id):
     policy = Policy.query.get_or_404(id)
@@ -417,9 +376,7 @@ def delete_policy(id):
     return redirect(url_for('clients.client_detail', id=client_id))
 
 
-# ===========================================================================
 # 6. АКТУАРНЫЙ РАСЧЁТ
-# ===========================================================================
 @policy_bp.route('/calculations/<int:policy_id>', methods=['GET', 'POST'])
 def calculations(policy_id):
     policy = Policy.query.get_or_404(policy_id)
@@ -433,10 +390,8 @@ def calculations(policy_id):
         age    = policy.client.age
         gender = policy.client.gender or 'M'
 
-        # Базовая qx из таблицы смертности (или fallback)
         qx = get_mortality_rate(age, gender)
 
-        # Сценарные поправки
         scenario_multipliers = {
             'pessimistic': 1.5,
             'baseline':    1.0,
@@ -447,29 +402,25 @@ def calculations(policy_id):
         S  = float(policy.sum_insured or 0)
         n  = int(policy.term_years or 1)
         P  = float(policy.premium or 0)
-        v  = 1 / (1 + discount_rate)  # дисконтный множитель
+        v  = 1 / (1 + discount_rate)
 
-        # --- Ожидаемая приведённая стоимость выплат (EPV) ---
-        # EPV = S * sum_{t=1}^{n} qx * v^t  (упрощённая модель: qx постоянна)
+        # EPV = S * sum_{t=1}^{n} qx * v^t 
         epv = S * qx_scenario * sum(v**t for t in range(1, n + 1))
 
-        # --- Аннуитет взносов ---
+
         annuity = sum(v**t for t in range(1, n + 1))  # a_{n|}
 
-        # --- Нетто-премия (годовая) ---
+
         net_premium = epv / annuity if annuity else 0
 
-        # --- Дисперсия (Бернулли) ---
         variance = (S ** 2) * qx_scenario * (1 - qx_scenario)
         std_dev  = math.sqrt(variance)
 
-        # --- Нетто-резерв на конец 1-го года (prospective) ---
         # tV = EPV(будущих выплат) - EPV(будущих взносов)
         epv_future    = S * qx_scenario * sum(v**t for t in range(1, n))
         annuity_future = sum(v**t for t in range(1, n))
         reserve_1yr   = max(epv_future - net_premium * annuity_future, 0)
 
-        # --- Ожидаемая прибыль ---
         # реальные взносы за весь срок - ожидаемые выплаты с учётом инфляции
         expected_profit = P * n - epv * (1 + inflation)
 
@@ -490,9 +441,7 @@ def calculations(policy_id):
     return render_template('calculations.html', policy=policy, result=result)
 
 
-# ===========================================================================
 # 9. ПЛАТЕЖИ (все платежи системы)
-# ===========================================================================
 @payment_bp.route('/payments', methods=['GET'])
 def payments():
     policy_id  = request.args.get('policy_id')
@@ -547,9 +496,7 @@ def add_payment(policy_id):
     return render_template('add_payment.html', policy=policy)
 
 
-# ===========================================================================
 # 10. ВЫПЛАТЫ (страховые случаи — claims)
-# ===========================================================================
 @claim_bp.route('/claims', methods=['GET'])
 def claims():
     policy_id = request.args.get('policy_id')
@@ -593,9 +540,7 @@ def add_claim(policy_id):
     return render_template('add_claim.html', policy=policy)
 
 
-# ===========================================================================
 # 11. СЦЕНАРНЫЙ АНАЛИЗ (портфельный — не по конкретному договору)
-# ===========================================================================
 @main.route('/scenario_analysis', methods=['GET', 'POST'])
 def scenario_analysis():
     results = None
@@ -651,18 +596,15 @@ def scenario_analysis():
 
 
 # 12. РЕЗЕРВЫ
-
 @main.route('/reserves', methods=['GET'])
 def reserves():
     policy_id = request.args.get('policy_id')
 
     if policy_id:
-        # Резервы конкретного договора
         policy = Policy.query.get_or_404(int(policy_id))
         reserve_rows = Reserve.query.filter_by(policy_id=int(policy_id)).order_by(Reserve.date).all()
         return render_template('reserves.html', reserve_rows=reserve_rows, policy=policy, all_policies=None)
     else:
-        # Общий резерв компании: последнее значение по каждому договору
         all_policies = Policy.query.filter_by(status='active').all()
         summary = []
         total_reserve = 0
@@ -672,7 +614,6 @@ def reserves():
             total_reserve += amount
             summary.append({'policy': p, 'reserve': round(amount, 2)})
 
-        # Динамика суммарного резерва компании по месяцам
         all_res = Reserve.query.order_by(Reserve.date).all()
         dyn_by_date = {}
         for r in all_res:
@@ -690,3 +631,210 @@ def reserves():
             dyn_labels=dyn_labels,
             dyn_values=dyn_values,
         )
+        
+        
+# ТАБЛИЦЫ СМЕРТНОСТИ 
+mortality_bp = Blueprint('mortality', __name__)
+ 
+ 
+@mortality_bp.route('/mortality')
+def mortality_index():
+    """Список всех загруженных таблиц смертности."""
+    tables = MortalityTable.query.order_by(
+        MortalityTable.gender, MortalityTable.year.desc()
+    ).all()
+ 
+    table_info = []
+    for t in tables:
+        count = MortalityRate.query.filter_by(table_id=t.id).count()
+        ages = db.session.query(
+            db.func.min(MortalityRate.age),
+            db.func.max(MortalityRate.age)
+        ).filter_by(table_id=t.id).first()
+        table_info.append({
+            'table': t,
+            'count': count,
+            'age_min': ages[0] if ages[0] is not None else '—',
+            'age_max': ages[1] if ages[1] is not None else '—',
+        })
+ 
+    return render_template('mortality_index.html', table_info=table_info)
+ 
+ 
+@mortality_bp.route('/mortality/view/<int:table_id>')
+def mortality_view(table_id):
+    """Просмотр и редактирование строк таблицы смертности."""
+    table = MortalityTable.query.get_or_404(table_id)
+ 
+    age_min = request.args.get('age_min', type=int, default=0)
+    age_max = request.args.get('age_max', type=int, default=110)
+ 
+    rates = MortalityRate.query.filter_by(table_id=table_id).filter(
+        MortalityRate.age >= age_min,
+        MortalityRate.age <= age_max
+    ).order_by(MortalityRate.age).all()
+ 
+    return render_template(
+        'mortality_view.html',
+        table=table,
+        rates=rates,
+        age_min=age_min,
+        age_max=age_max,
+    )
+ 
+ 
+@mortality_bp.route('/mortality/edit_rate/<int:rate_id>', methods=['POST'])
+def mortality_edit_rate(rate_id):
+    """Изменить значение qx для одной строки."""
+    rate = MortalityRate.query.get_or_404(rate_id)
+    new_qx = request.form.get('qx', type=float)
+ 
+    if new_qx is None or not (0 < new_qx < 1):
+        flash('Значение qx должно быть числом от 0 до 1 (не включая границы).', 'error')
+    else:
+        rate.qx = round(new_qx, 8)
+        db.session.commit()
+        flash(f'qx для возраста {rate.age} обновлён: {rate.qx}', 'success')
+ 
+    return redirect(url_for('mortality.mortality_view', table_id=rate.table_id))
+ 
+ 
+@mortality_bp.route('/mortality/add_rate/<int:table_id>', methods=['POST'])
+def mortality_add_rate(table_id):
+    """Добавить одну строку (возраст + qx) в таблицу."""
+    table = MortalityTable.query.get_or_404(table_id)
+    age = request.form.get('age', type=int)
+    qx  = request.form.get('qx', type=float)
+ 
+    if age is None or qx is None or not (0 <= age <= 120) or not (0 < qx < 1):
+        flash('Введите корректный возраст (0–120) и qx (0–1).', 'error')
+        return redirect(url_for('mortality.mortality_view', table_id=table_id))
+ 
+    existing = MortalityRate.query.filter_by(table_id=table_id, age=age).first()
+    if existing:
+        existing.qx = round(qx, 8)
+        flash(f'Значение qx для возраста {age} обновлено.', 'success')
+    else:
+        db.session.add(MortalityRate(table_id=table_id, age=age, qx=round(qx, 8)))
+        flash(f'Строка для возраста {age} добавлена.', 'success')
+ 
+    db.session.commit()
+    return redirect(url_for('mortality.mortality_view', table_id=table_id))
+ 
+ 
+@mortality_bp.route('/mortality/delete_rate/<int:rate_id>', methods=['POST'])
+def mortality_delete_rate(rate_id):
+    """Удалить одну строку из таблицы."""
+    rate = MortalityRate.query.get_or_404(rate_id)
+    table_id = rate.table_id
+    db.session.delete(rate)
+    db.session.commit()
+    flash(f'Строка для возраста {rate.age} удалена.', 'info')
+    return redirect(url_for('mortality.mortality_view', table_id=table_id))
+ 
+ 
+@mortality_bp.route('/mortality/create', methods=['GET', 'POST'])
+def mortality_create():
+    """Создать новую пустую таблицу смертности."""
+    if request.method == 'POST':
+        name   = request.form.get('table_name', '').strip()
+        gender = request.form.get('gender', 'M')
+        year   = request.form.get('year', type=int) or date.today().year
+ 
+        if not name:
+            flash('Укажите название таблицы.', 'error')
+            return redirect(url_for('mortality.mortality_create'))
+ 
+        table = MortalityTable(table_name=name, gender=gender, year=year)
+        db.session.add(table)
+        db.session.commit()
+        flash(f'Таблица «{name}» создана. Добавьте строки вручную или загрузите CSV.', 'success')
+        return redirect(url_for('mortality.mortality_view', table_id=table.id))
+ 
+    return render_template('mortality_create.html', now=date.today())
+ 
+ 
+@mortality_bp.route('/mortality/upload_csv/<int:table_id>', methods=['POST'])
+def mortality_upload_csv(table_id):
+    """
+    Загрузить данные из CSV-файла.
+ 
+    Ожидаемый формат CSV (с заголовком):
+        age,qx
+        0,0.005320
+        1,0.000423
+        ...
+ 
+    Разделитель — запятая или точка с запятой.
+    Существующие строки для тех же возрастов перезаписываются.
+    """
+    table = MortalityTable.query.get_or_404(table_id)
+    file  = request.files.get('csv_file')
+ 
+    if not file or file.filename == '':
+        flash('Файл не выбран.', 'error')
+        return redirect(url_for('mortality.mortality_view', table_id=table_id))
+ 
+    if not file.filename.lower().endswith('.csv'):
+        flash('Допускается только формат CSV.', 'error')
+        return redirect(url_for('mortality.mortality_view', table_id=table_id))
+ 
+    try:
+        content  = file.read().decode('utf-8-sig')   # utf-8-sig убирает BOM
+        dialect  = csv.Sniffer().sniff(content[:1024], delimiters=',;')
+        reader   = csv.DictReader(io.StringIO(content), dialect=dialect)
+ 
+        reader.fieldnames = [f.strip().lower() for f in reader.fieldnames]
+ 
+        if 'age' not in reader.fieldnames or 'qx' not in reader.fieldnames:
+            flash('CSV должен содержать столбцы «age» и «qx».', 'error')
+            return redirect(url_for('mortality.mortality_view', table_id=table_id))
+ 
+        added = updated = skipped = 0
+        for row in reader:
+            try:
+                age = int(row['age'])
+                qx  = float(row['qx'].replace(',', '.'))
+            except (ValueError, KeyError):
+                skipped += 1
+                continue
+ 
+            if not (0 <= age <= 120) or not (0 < qx < 1):
+                skipped += 1
+                continue
+ 
+            existing = MortalityRate.query.filter_by(
+                table_id=table_id, age=age
+            ).first()
+            if existing:
+                existing.qx = round(qx, 8)
+                updated += 1
+            else:
+                db.session.add(MortalityRate(
+                    table_id=table_id, age=age, qx=round(qx, 8)
+                ))
+                added += 1
+ 
+        db.session.commit()
+        flash(
+            f'CSV загружен: добавлено {added}, обновлено {updated}, '
+            f'пропущено {skipped} строк.',
+            'success'
+        )
+ 
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Ошибка при чтении CSV: {e}', 'error')
+ 
+    return redirect(url_for('mortality.mortality_view', table_id=table_id))
+ 
+ 
+@mortality_bp.route('/mortality/delete_table/<int:table_id>', methods=['POST'])
+def mortality_delete_table(table_id):
+    """Удалить всю таблицу смертности со всеми строками."""
+    table = MortalityTable.query.get_or_404(table_id)
+    name  = table.table_name
+    db.session.delete(table)
+    db.session.commit()
+    flash(f'Таблица «{name}» удалена.', 'info')
+    return redirect(url_for('mortality.mortality_index'))

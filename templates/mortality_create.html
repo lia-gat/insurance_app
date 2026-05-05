@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Создать таблицу смертности{% endblock %}
+
+{% block content %}
+
+<h2>Создание новой таблицы смертности</h2>
+
+<hr>
+
+<p>
+    После создания таблица будет пустой. Данные можно добавить двумя способами:
+    вручную (строка за строкой) или загрузить CSV-файл целиком.
+</p>
+
+<form method="POST" action="{{ url_for('mortality.mortality_create') }}">
+
+    <label>Название таблицы: <span style="color:red">*</span></label><br>
+    <input type="text" name="table_name"
+           placeholder="Например: Росстат 2022 (мужчины)"
+           style="width:100%;max-width:480px;" required><br><br>
+
+    <label>Пол: <span style="color:red">*</span></label><br>
+    <select name="gender" required>
+        <option value="M">Мужской</option>
+        <option value="F">Женский</option>
+    </select><br><br>
+
+    <label>Год составления таблицы:</label><br>
+    <input type="number" name="year" min="1900" max="2100"
+           value="{{ now.year }}" style="width:120px;"><br>
+    <small style="color:#64748b;">
+        При наличии нескольких таблиц одного пола в расчётах используется таблица
+        с наибольшим годом.
+    </small><br><br>
+
+    <hr>
+    <button type="submit">Создать таблицу</button>
+
+</form>
+
+<hr>
+
+<h3>Что делать дальше</h3>
+<p>После создания таблицы:</p>
+<p style="margin-left:20px;">
+    1. Откроется страница редактирования — загрузите CSV или добавьте строки вручную.<br>
+    2. CSV должен содержать столбцы <b>age</b> и <b>qx</b> (разделитель: запятая или точка с запятой).<br>
+    3. Как только таблица заполнена, все актуарные расчёты автоматически начнут использовать её вместо аппроксимации Гомпертца.
+</p>
+
+<hr>
+<a href="{{ url_for('mortality.mortality_index') }}">
+    <button type="button">Отмена</button>
+</a>
+
+{% endblock %}

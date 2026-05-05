@@ -61,23 +61,11 @@
     <td>
         <a href="{{ url_for('clients.client_detail', id=p.client.id) }}">{{ p.client.full_name }}</a>
     </td>
-    <td>
-        {% if p.insurance_type == 'life' %}Страхование жизни
-        {% elif p.insurance_type == 'endowment' %}Накопительное страхование
-        {% elif p.insurance_type == 'term' %}Срочное страхование
-        {% elif p.insurance_type == 'annuity' %}Аннуитет
-        {% elif p.insurance_type == 'mixed' %}Смешанное страхование
-        {% else %}{{ p.insurance_type }}
-        {% endif %}
-    </td>
+    <td>{{ p.insurance_type | tr }}</td>
     <td>{{ p.term_years }} лет</td>
     <td>{{ "{:,.2f}".format(p.sum_insured or 0) }}</td>
     <td>{{ "{:,.2f}".format(p.premium or 0) }}</td>
-    <td>
-        {% if p.status == 'active' %}🟢 Активный
-        {% elif p.status == 'closed' %}⚪ Закрыт
-        {% else %}🔴 Истёк{% endif %}
-    </td>
+    <td>{{ p.status | tr }}</td>
     <td>
         <a href="{{ url_for('policy.policy_detail', id=p.id) }}">Открыть</a>
     </td>
@@ -88,7 +76,6 @@
 
 <hr>
 
-<!-- Аналитика портфеля -->
 <h3>Аналитика портфеля</h3>
 <p>Всего договоров: <b>{{ policies | length }}</b></p>
 <p>Активных: <b>{{ policies | selectattr('status', 'equalto', 'active') | list | length }}</b></p>

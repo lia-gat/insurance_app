@@ -172,24 +172,7 @@
 <tr>
     <td>{{ h.change_date }}</td>
     <td>{{ h.policy.contract_number }}</td>
-    <td>
-    {% if h.field_name == 'client_id' %}Клиент
-    {% elif h.field_name == 'contract_number' %}Номер договора
-    {% elif h.field_name == 'issue_date' %}Дата заключения
-    {% elif h.field_name == 'insurance_type' %}Тип страхования
-    {% elif h.field_name == 'term_years' %}Срок договора
-    {% elif h.field_name == 'premium' %}Страховой взнос
-    {% elif h.field_name == 'premium_frequency' %}Периодичность взносов
-    {% elif h.field_name == 'interest_rate' %}Ставка доходности
-    {% elif h.field_name == 'sum_insured' %}Страховая сумма
-    {% elif h.field_name == 'beneficiary_name' %}Выгодоприобретатель
-    {% elif h.field_name == 'beneficiary_relation' %}Родство
-    {% elif h.field_name == 'beneficiary_phone' %}Телефон выгодоприобретателя
-    {% elif h.field_name == 'beneficiary_email' %}Email выгодоприобретателя
-    {% elif h.field_name == 'status' %}Статус договора
-    {% else %}{{ h.field_name }}
-    {% endif %}
-</td>
+    <td>{{ h.field_name | tr }}</td>
     <td>{{ h.old_value }}</td>
     <td>{{ h.new_value }}</td>
 </tr>
@@ -201,12 +184,10 @@
 
 <hr>
 
-<!-- Действия -->
 <a href="{{ url_for('clients.edit_client', id=client.id) }}">
     <button>Редактировать</button>
 </a>
 
-<!-- Удаление через POST-форму (защита от случайного удаления) -->
 <form method="POST" action="{{ url_for('clients.delete_client', id=client.id) }}"
       style="display:inline;"
       onsubmit="return confirm('Удалить клиента {{ client.full_name }}? Все его договоры тоже будут удалены.')">

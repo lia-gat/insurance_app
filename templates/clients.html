@@ -8,7 +8,6 @@
 
 <hr>
 
-<!-- Поиск и фильтры -->
 <form method="GET" action="{{ url_for('clients.clients') }}">
 
     <input type="text" name="name" placeholder="ФИО"
@@ -42,7 +41,6 @@
 
 <hr>
 
-<!-- Таблица клиентов -->
 {% if clients %}
 
 <table border="1" cellpadding="8" cellspacing="0">
@@ -71,16 +69,9 @@
         <td>{{ client.birth_date }}</td>
         <td>{{ client.age }}</td>
 
-        <td>
-            {% if client.gender == 'M' %}Мужской
-            {% elif client.gender == 'F' %}Женский
-            {% else %}—{% endif %}
-        </td>
+        <td>{{ client.gender | tr }}</td>
 
-        <td>
-            {% if client.status == 'alive' %}Жив
-            {% else %}Умер{% endif %}
-        </td>
+        <td>{{ client.status | tr }}</td>
 
         <td>{{ client.policies | length }}</td>
 

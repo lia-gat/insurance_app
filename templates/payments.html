@@ -8,7 +8,6 @@
 
 <hr>
 
-<!-- Фильтры -->
 <form method="GET" action="{{ url_for('payment.payments') }}">
 
     <input type="number" name="policy_id" placeholder="ID договора"
@@ -42,7 +41,6 @@
 
 {% if payments %}
 
-<!-- Итог -->
 <p>Найдено платежей: <b>{{ payments | length }}</b> &nbsp;|&nbsp;
    Общая сумма: <b>{{ "{:,.2f}".format(total_amount) }}</b></p>
 
@@ -79,18 +77,9 @@
 
     <td>{{ "{:,.2f}".format(p.amount) }}</td>
 
-    <td>
-        {% if p.payment_type == 'premium' %}Взнос
-        {% elif p.payment_type == 'penalty' %}Штраф
-        {% elif p.payment_type == 'partial_withdrawal' %}Частичное изъятие
-        {% else %}{{ p.payment_type }}{% endif %}
-    </td>
+    <td>{{ p.payment_type | tr }}</td>
 
-    <td>
-        {% if p.status == 'confirmed' %}✅ Подтверждён
-        {% elif p.status == 'overdue' %}🔴 Просрочен
-        {% else %}⏳ Ожидает{% endif %}
-    </td>
+    <td>{{ p.status | tr }}</td>
 
 </tr>
 {% endfor %}

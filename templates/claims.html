@@ -8,7 +8,6 @@
 
 <hr>
 
-<!-- Фильтры -->
 <form method="GET" action="{{ url_for('claim.claims') }}">
 
     <input type="number" name="policy_id" placeholder="ID договора"
@@ -66,12 +65,7 @@
 
     <td>{{ "{:,.2f}".format(c.approved_amount or 0) }}</td>
 
-    <td>
-        {% if c.reason == 'death' %}⚫ Смерть
-        {% elif c.reason == 'maturity' %}🟢 Дожитие
-        {% elif c.reason == 'surrender' %}🔵 Расторжение
-        {% else %}{{ c.reason }}{% endif %}
-    </td>
+    <td>{{ c.reason | tr }}</td>
 
 </tr>
 {% endfor %}

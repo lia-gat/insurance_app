@@ -104,7 +104,7 @@ class EconomicParameters(db.Model):
     id             = db.Column(db.Integer, primary_key=True)
     effective_date = db.Column(db.Date)
     inflation_rate = db.Column(db.Float)
-    discount_rate  = db.Column(db.Float)  # Ставка дисконтирования
+    discount_rate  = db.Column(db.Float)
 
 
 class Reserve(db.Model):

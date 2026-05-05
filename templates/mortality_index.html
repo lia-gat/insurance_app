@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Таблицы смертности{% endblock %}
+
+{% block content %}
+
+<h2>Таблицы смертности</h2>
+
+<hr>
+
+<p>
+    Таблицы смертности задают вероятность <b>qₓ</b> — вероятность смерти в течение года
+    для застрахованного в возрасте x лет. Они используются во всех актуарных расчётах системы.
+    При отсутствии загруженных таблиц применяется аппроксимация по закону Гомпертца.
+</p>
+
+<a href="{{ url_for('mortality.mortality_create') }}">
+    <button>+ Создать новую таблицу</button>
+</a>
+
+<hr>
+
+{% if table_info %}
+
+<table border="1" cellpadding="8" cellspacing="0">
+<tr>
+    <th>Название</th>
+    <th>Пол</th>
+    <th>Год</th>
+    <th>Строк</th>
+    <th>Возраст (от–до)</th>
+    <th>Используется</th>
+    <th>Действия</th>
+</tr>
+
+{% for info in table_info %}
+<tr>
+    <td><b>{{ info.table.table_name }}</b></td>
+
+    <td style="text-align:center;">
+        {% if info.table.gender == 'M' %}М
+        {% else %}Ж{% endif %}
+    </td>
+
+    <td style="text-align:center;">{{ info.table.year }}</td>
+    <td style="text-align:center;">{{ info.count }}</td>
+
+    <td style="text-align:center;">
+        {% if info.age_min != '—' %}
+            {{ info.age_min }} – {{ info.age_max }}
+        {% else %}—{% endif %}
+    </td>
+
+    <td style="text-align:center;">
+        {% set ns = namespace(is_active=false) %}
+        {% for other in table_info %}
+            {% if other.table.gender == info.table.gender and other.table.year > info.table.year %}
+                {% set ns.is_active = true %}
+            {% endif %}
+        {% endfor %}
+        {% if not ns.is_active %}
+            <span style="color:#16a34a;font-weight:600;">Да</span>
+        {% else %}
+            <span style="color:#94a3b8;">—</span>
+        {% endif %}
+    </td>
+
+    <td>
+        <a href="{{ url_for('mortality.mortality_view', table_id=info.table.id) }}">
+            Просмотр / редактирование
+        </a>
+        &nbsp;|&nbsp;
+        <form method="POST"
+              action="{{ url_for('mortality.mortality_delete_table', table_id=info.table.id) }}"
+              style="display:inline;"
+              onsubmit="return confirm('Удалить таблицу «{{ info.table.table_name }}»? Все {{ info.count }} строк будут удалены.')">
+            <button type="submit"
+                    style="background:transparent;color:#ef4444;border:none;padding:0;
+                           cursor:pointer;font-size:0.88rem;font-weight:600;">
+                Удалить
+            </button>
+        </form>
+    </td>
+</tr>
+{% endfor %}
+
+</table>
+
+<hr>
+
+<h3>Как работает выбор таблицы</h3>
+<p>
+    Для каждого пола в расчётах используется таблица с <b>наибольшим годом</b>.
+    Если таблиц для нужного пола нет — применяется встроенная аппроксимация Гомпертца
+    (параметры: мужчины a=0,00022 b=0,097; женщины a=0,00015 b=0,090).
+</p>
+
+{% else %}
+
+<p style="color:#94a3b8;">
+    Таблиц смертности пока нет. Используется аппроксимация Гомпертца.
+    Создайте таблицу вручную или загрузите CSV.
+</p>
+
+{% endif %}
+
+<hr>
+
+<h3>Формат CSV для загрузки</h3>
+<p>
+    CSV-файл должен содержать два столбца с заголовком:
+</p>
+<pre style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;
+            padding:12px 16px;font-size:0.88rem;line-height:1.6;">age,qx
+0,0.005320
+1,0.000423
+2,0.000287
+...
+80,0.089400
+</pre>
+<p style="font-size:0.88em;color:#64748b;">
+    Разделитель — запятая или точка с запятой. Кодировка — UTF-8.
+    Значение qx должно быть в диапазоне (0; 1). Строки с ошибками пропускаются.
+</p>
+
+{% endblock %}

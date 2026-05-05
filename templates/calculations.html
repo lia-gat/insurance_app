@@ -8,7 +8,6 @@
 
 <hr>
 
-<!-- Информация по договору -->
 <p><b>Договор:</b> {{ policy.contract_number }}</p>
 <p><b>Клиент:</b>
     <a href="{{ url_for('clients.client_detail', id=policy.client_id) }}">
@@ -23,7 +22,6 @@
 
 <hr>
 
-<!-- Используемые формулы -->
 <h3>Актуарные формулы</h3>
 
 <p><b>1. Ожидаемая приведённая стоимость выплат (EPV):</b></p>
@@ -43,7 +41,6 @@
 
 <hr>
 
-<!-- Входные параметры -->
 <h3>Параметры расчёта</h3>
 
 <form method="POST" action="{{ url_for('policy.calculations', policy_id=policy.id) }}">
@@ -69,7 +66,6 @@
 
 <hr>
 
-<!-- Результаты -->
 {% if result %}
 
 <h3>Результаты расчёта — сценарий: <i>{{ result.scenario }}</i></h3>

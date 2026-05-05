@@ -8,7 +8,6 @@
 
 <hr>
 
-<!-- Контекст договора -->
 <div class="info-block">
     <p><b>Договор:</b>
         <a href="{{ url_for('policy.policy_detail', id=policy.id) }}">{{ policy.contract_number }}</a>
@@ -22,15 +21,12 @@
     </p>
     <p><b>Стандартный взнос:</b> <b>{{ "{:,.2f}".format(policy.premium or 0) }} руб.</b></p>
     <p><b>Статус договора:</b>
-        {% if policy.status == 'active' %}🟢 Активный
-        {% elif policy.status == 'closed' %}⚪ Закрыт
-        {% else %}🔴 Истёк{% endif %}
+        {{  policy.status  | tr  }}
     </p>
 </div>
 
 <hr>
 
-<!-- Прогресс оплаты -->
 {% set total_paid = namespace(val=0) %}
 {% for p in policy.payments %}{% set total_paid.val = total_paid.val + p.amount %}{% endfor %}
 {% set total_plan = (policy.premium or 0) * (policy.term_years or 1) %}
@@ -67,32 +63,31 @@
         document.getElementById('hint_withdrawal').style.display =
             this.value === 'partial_withdrawal' ? 'block' : 'none'
     ">
-        <option value="premium">💳 Страховой взнос</option>
-        <option value="penalty">⚠️ Штраф / пеня</option>
-        <option value="partial_withdrawal">💰 Частичное изъятие накоплений</option>
+        <option value="premium">Страховой взнос</option>
+        <option value="penalty">Штраф / пеня</option>
+        <option value="partial_withdrawal">Частичное изъятие накоплений</option>
     </select><br><br>
 
     <div id="hint_withdrawal" style="display:none;background:#fff7ed;border-left:4px solid #f59e0b;
          padding:10px 14px;border-radius:6px;margin-bottom:14px;font-size:0.87em;color:#92400e;">
-        ⚠️ Частичное изъятие уменьшает накопленный резерв по договору.
+        Частичное изъятие уменьшает накопленный резерв по договору.
         Убедитесь, что сумма не превышает текущий резерв.
     </div>
 
     <label>Статус:</label><br>
     <select name="status">
-        <option value="confirmed">✅ Подтверждён</option>
-        <option value="pending">⏳ Ожидает подтверждения</option>
-        <option value="overdue">🔴 Просрочен</option>
+        <option value="confirmed">Подтверждён</option>
+        <option value="pending">Ожидает подтверждения</option>
+        <option value="overdue">Просрочен</option>
     </select><br><br>
 
     <hr>
-    <button type="submit">💾 Добавить платёж</button>
+    <button type="submit">Добавить платёж</button>
 
 </form>
 
 <hr>
 
-<!-- Последние платежи -->
 {% if policy.payments %}
 <h3>Последние платежи по договору</h3>
 <table border="1" cellpadding="6">
@@ -109,11 +104,7 @@
     <td>{{ pay.payment_date }}</td>
     <td>{{ "{:,.2f}".format(pay.amount) }}</td>
     <td>{{ pay.payment_type }}</td>
-    <td>
-        {% if pay.status == 'confirmed' %}✅ Подтверждён
-        {% elif pay.status == 'pending' %}⏳ Ожидает
-        {% else %}🔴 Просрочен{% endif %}
-    </td>
+    <td>{{ pay.status | tr }}</td>
 </tr>
 {% set shown.n = shown.n + 1 %}
 {% endif %}

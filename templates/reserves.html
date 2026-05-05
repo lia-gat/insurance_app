@@ -6,9 +6,6 @@
 
 {% if policy %}
 
-{# ============================================================
-   Резервы по конкретному договору
-   ============================================================ #}
 
 <h2>Резерв по договору № {{ policy.contract_number }}</h2>
 
@@ -71,9 +68,6 @@ new Chart(document.getElementById('policyResChart'), {
 
 {% else %}
 
-{# ============================================================
-   Общие резервы компании
-   ============================================================ #}
 
 <h2>Резервы компании</h2>
 
@@ -90,7 +84,6 @@ new Chart(document.getElementById('policyResChart'), {
 
 <hr>
 
-<!-- Динамика суммарного резерва -->
 <h3>Динамика суммарного резерва</h3>
 
 {% if dyn_labels %}
@@ -117,7 +110,6 @@ new Chart(document.getElementById('dynChart'), {
 
 <hr>
 
-<!-- Итог по компании -->
 <p>
     Суммарный резерв компании (все активные договоры):
     <b>{{ "{:,.2f}".format(total_reserve) }}</b>
@@ -125,7 +117,6 @@ new Chart(document.getElementById('dynChart'), {
 
 <hr>
 
-<!-- Таблица резервов по договорам -->
 <h3>Резервы по договорам</h3>
 
 {% if all_policies %}
@@ -152,15 +143,7 @@ new Chart(document.getElementById('dynChart'), {
             {{ row.policy.client.full_name }}
         </a>
     </td>
-    <td>
-        {% if row.policy.insurance_type == 'life' %}Страхование жизни
-        {% elif row.policy.insurance_type == 'endowment' %}Накопительное страхование
-        {% elif row.policy.insurance_type == 'term' %}Срочное страхование
-        {% elif row.policy.insurance_type == 'annuity' %}Аннуитет
-        {% elif row.policy.insurance_type == 'mixed' %}Смешанное страхование
-        {% else %}{{ row.policy.insurance_type }}
-        {% endif %}
-    </td>
+    <td>{{ row.policy.insurance_type | tr }}</td>
     <td>{{ "{:,.2f}".format(row.policy.sum_insured or 0) }}</td>
     <td>
         {% if row.reserve > 0 %}
